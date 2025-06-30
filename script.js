@@ -332,7 +332,9 @@ const fetchAdminStatus = async () => {
                 if (uiElements.developerStatus) uiElements.developerStatus.classList.remove('hidden');
                 console.log("Current user is admin.");
                 // جلب وعرض عدد المستخدمين للمطور
-                await fetchAndDisplayUserCount();
+                setTimeout(() => {
+                    fetchAndDisplayUserCount();
+                }, 2000);
             } else {
                 isAdmin = false;
                 if (uiElements.developerButtons) uiElements.developerButtons.classList.add('hidden');
@@ -351,6 +353,49 @@ const fetchAdminStatus = async () => {
     }
 };
 
+// دالة البحث عن مستخدم موجود بنفس المعلومات
+const findExistingUser = async (fullName, phoneNumber) => {
+    try {
+        console.log("Searching for existing user with:", { fullName, phoneNumber });
+        
+        const usersColRef = collection(db, 'users');
+        const usersSnapshot = await getDocs(usersColRef);
+        
+        for (const userDoc of usersSnapshot.docs) {
+            try {
+                const userProfileRef = doc(db, `users/${userDoc.id}/userProfile`, userDoc.id);
+                const userProfileSnap = await getDoc(userProfileRef);
+                
+                if (userProfileSnap.exists()) {
+                    const userData = userProfileSnap.data();
+                    console.log("Checking user:", { 
+                        id: userDoc.id, 
+                        name: userData.fullName, 
+                        phone: userData.phoneNumber 
+                    });
+                    
+                    if (userData.fullName === fullName && userData.phoneNumber === phoneNumber) {
+                        console.log("Match found for user:", userDoc.id);
+                        return {
+                            userId: userDoc.id,
+                            data: userData
+                        };
+                    }
+                }
+            } catch (profileError) {
+                console.warn(`Error reading profile for user ${userDoc.id}:`, profileError);
+                continue;
+            }
+        }
+        
+        console.log("No existing user found with matching name and phone");
+        return null; // لم يتم العثور على مستخدم مطابق
+    } catch (error) {
+        console.error("Error searching for existing user:", error);
+        return null;
+    }
+};
+
 // دالة جلب وعرض عدد المستخدمين (للمطور فقط)
 const fetchAndDisplayUserCount = async () => {
     if (!isAdmin) return;
@@ -362,10 +407,19 @@ const fetchAndDisplayUserCount = async () => {
         
         // عد المستخدمين الذين لديهم ملف شخصي مكتمل
         for (const userDoc of usersSnapshot.docs) {
-            const userProfileRef = collection(db, `users/${userDoc.id}/userProfile`);
-            const userProfileSnapshot = await getDocs(userProfileRef);
-            if (!userProfileSnapshot.empty) {
-                userCount++;
+            try {
+                const userProfileRef = doc(db, `users/${userDoc.id}/userProfile`, userDoc.id);
+                const userProfileSnapshot = await getDoc(userProfileRef);
+                if (userProfileSnapshot.exists()) {
+                    const userData = userProfileSnapshot.data();
+                    // التحقق من وجود البيانات الأساسية
+                    if (userData.fullName && userData.phoneNumber) {
+                        userCount++;
+                    }
+                }
+            } catch (profileError) {
+                // تجاهل الأخطاء والمتابعة
+                continue;
             }
         }
         
@@ -374,7 +428,6 @@ const fetchAndDisplayUserCount = async () => {
             userCountElement.textContent = userCount;
         }
         
-        console.log(`Total registered users: ${userCount}`);
     } catch (error) {
         console.error("Error fetching user count:", error);
         const userCountElement = document.getElementById('user-count');
@@ -474,6 +527,31 @@ const displayProducts = (products) => {
         // عرض التوصيل المجاني إذا كان متاحاً
         const freeDeliveryText = product.freeDelivery ? '<p class="text-green-400 text-sm mt-1 font-semibold">توصيل مجاني</p>' : '';
         
+        // عرض حالة المنتج (متوفر/مباع) - فقط إذا تم تحديدها وليست فارغة أو غير محدد
+        let availabilityText = '';
+        let buttonsSection = '';
+        
+        if (product.availability === 'available') {
+            availabilityText = '<p class="text-green-400 text-sm mt-1 font-semibold">متوفر</p>';
+        } else if (product.availability === 'sold') {
+            availabilityText = '<p class="text-red-400 text-sm mt-1 font-semibold">مباع</p>';
+        }
+        // إذا كانت availability فارغة أو غير محدد، لن يظهر شيء
+        
+        // إظهار الأزرار فقط إذا كان المنتج متوفر أو غير محدد (ليس مباع)
+        if (product.availability !== 'sold') {
+            buttonsSection = `
+                <div class="space-y-2 mt-3">
+                    <button data-product-id="${product.id}" class="add-to-cart-btn w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-md">
+                        أضف إلى السلة
+                    </button>
+                    <button data-product-id="${product.id}" class="buy-now-card-btn w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition duration-300 shadow-md">
+                        شراء الآن
+                    </button>
+                </div>
+            `;
+        }
+        
         const productCard = `
             <div id="product-${product.id}" class="bg-purple-800 rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-xl product-card-hover border border-purple-700">
                 <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-cover rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';">
@@ -484,15 +562,9 @@ const displayProducts = (products) => {
                     }</p>
                     <p class="text-purple-400 text-xs mt-1">اضغط على المنتج لمعرفة التفاصيل</p>
                     ${freeDeliveryText}
+                    ${availabilityText}
                     <p class="text-lg font-bold text-green-400 mt-2 text-center">${formattedPrice} د.ع</p>
-                    <div class="space-y-2 mt-3">
-                        <button data-product-id="${product.id}" class="add-to-cart-btn w-full bg-green-600 text-white py-2 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-md">
-                            أضف إلى السلة
-                        </button>
-                        <button data-product-id="${product.id}" class="buy-now-card-btn w-full bg-orange-600 text-white py-2 rounded-lg font-semibold hover:bg-orange-700 transition duration-300 shadow-md">
-                            شراء الآن
-                        </button>
-                    </div>
+                    ${buttonsSection}
                     ${isAdmin ? `
                     <div class="flex gap-2 mt-3">
                         <button data-product-id="${product.id}" class="edit-single-product-btn w-1/2 bg-blue-600 text-white py-2 rounded-lg font-semibold hover:bg-blue-700 transition duration-300 shadow-md">
@@ -599,6 +671,8 @@ const openProductDetailModal = (product) => {
     const productDetailThumbnails = document.getElementById('product-detail-thumbnails');
     const currentImageIndex = document.getElementById('current-image-index');
     const totalImages = document.getElementById('total-images');
+    const productDetailAvailability = document.getElementById('product-detail-availability');
+    const productDetailButtons = document.getElementById('product-detail-buttons');
     
     if (!uiElements.productDetailName || !productDetailMainImage || !uiElements.productDetailDescription || !uiElements.productDetailPrice || !uiElements.productDetailCategory || !uiElements.addToCartDetailBtn || !uiElements.productDetailModal || !productDetailThumbnails) {
          console.error("One or more product detail modal elements not found.");
@@ -609,6 +683,27 @@ const openProductDetailModal = (product) => {
     uiElements.productDetailDescription.textContent = product.description;
     uiElements.productDetailPrice.textContent = `${Math.round(product.price).toLocaleString('en-US')} د.ع`;
     uiElements.productDetailCategory.textContent = `القسم: ${categoriesData.find(cat => cat.id === product.category)?.name || 'غير مصنف'}`;
+
+    // عرض حالة التوفر - فقط إذا تم تحديدها وليست فارغة أو غير محدد
+    if (productDetailAvailability) {
+        if (product.availability === 'available') {
+            productDetailAvailability.innerHTML = '<span class="text-green-400 font-semibold">متوفر</span>';
+        } else if (product.availability === 'sold') {
+            productDetailAvailability.innerHTML = '<span class="text-red-400 font-semibold">مباع</span>';
+        } else {
+            // إذا لم يتم تحديد availability أو كانت فارغة، لا نعرض شيء
+            productDetailAvailability.innerHTML = '';
+        }
+    }
+
+    // إخفاء/إظهار الأزرار حسب حالة المنتج
+    if (productDetailButtons) {
+        if (product.availability === 'sold') {
+            productDetailButtons.style.display = 'none';
+        } else {
+            productDetailButtons.style.display = 'block';
+        }
+    }
 
     // تحديد الصور المتاحة (إما الصور الجديدة أو الصورة القديمة)
     let productImages = [];
@@ -1029,6 +1124,12 @@ const openEditProductModal = (product) => {
         editFreeDeliveryCheckbox.checked = product.freeDelivery || false;
     }
 
+    // تعبئة حقل حالة التوفر
+    const editAvailabilitySelect = document.getElementById('edit-product-availability');
+    if (editAvailabilitySelect) {
+        editAvailabilitySelect.value = product.availability || '';
+    }
+
     // تعبئة حقول الصور الخمسة
     for (let i = 1; i <= 5; i++) {
         const imageInput = document.getElementById(`edit-product-image-url-${i}`);
@@ -1323,22 +1424,82 @@ const setupEventListeners = () => {
             console.log("Attempting to register/login with:", { fullName, fullPhoneNumber });
 
             try {
-                if (!userId && auth.currentUser) {
-                    userId = auth.currentUser.uid;
-                } else if (!userId) {
-                    await signInAnonymously(auth);
-                    userId = auth.currentUser.uid;
-                }
-                console.log("Current user UID after auth attempt:", userId);
+                // البحث عن مستخدم موجود بنفس المعلومات
+                const existingUser = await findExistingUser(fullName, fullPhoneNumber);
+                
+                if (existingUser) {
+                    // المستخدم موجود، تسجيل دخول للحساب الموجود
+                    console.log("Existing user found, switching to existing account:", existingUser.userId);
+                    
+                    // تسجيل الخروج من الحساب المجهول الحالي إذا كان مختلفاً
+                    if (userId && userId !== existingUser.userId) {
+                        console.log("Signing out from current anonymous account to switch to existing account");
+                        await signOut(auth);
+                    }
+                    
+                    // تعيين المستخدم الموجود
+                    userId = existingUser.userId;
+                    currentUserProfile = existingUser.data;
+                    
+                    // محاكاة تسجيل الدخول للمستخدم الموجود
+                    // هنا نحتاج لتسجيل الدخول بطريقة مختلفة أو إدارة الجلسة بشكل مخصص
+                    
+                    // تحديث UI
+                    if (uiElements.profileDetailsName) uiElements.profileDetailsName.textContent = existingUser.data.fullName || 'مستخدم';
+                    if (uiElements.profileDetailsPhone) uiElements.profileDetailsPhone.textContent = existingUser.data.phoneNumber || 'N/A';
+                    if (uiElements.profileDetailsImage) uiElements.profileDetailsImage.src = existingUser.data.profilePicUrl || 'https://placehold.co/100x100/eeeeee/333333?text=User';
 
-                const userDocRef = doc(db, `users/${userId}/userProfile`, userId);
-                await setDoc(userDocRef, {
-                    fullName: fullName,
-                    phoneNumber: fullPhoneNumber,
-                    profilePicUrl: 'https://placehold.co/100x100/eeeeee/333333?text=User',
-                    createdAt: new Date().toISOString()
-                }, { merge: true });
-                console.log("User profile saved/updated in Firestore.");
+                    if (existingUser.data.createdAt) {
+                        const date = new Date(existingUser.data.createdAt);
+                        if (uiElements.profileDetailsRegisteredDate) uiElements.profileDetailsRegisteredDate.textContent = `تاريخ التسجيل: ${date.toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })} في ${date.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
+                    }
+
+                    // إعداد Real-time listeners للحساب الموجود
+                    setupRealtimeListeners();
+                    
+                    alertUserMessage(`مرحباً بعودتك ${existingUser.data.fullName}! تم تسجيل دخولك للحساب الموجود.`, 'success');
+                } else {
+                    // مستخدم جديد، التحقق من وجود UID حالي أو إنشاء واحد جديد
+                    if (!userId) {
+                        if (!auth.currentUser) {
+                            await signInAnonymously(auth);
+                        }
+                        userId = auth.currentUser.uid;
+                    }
+                    
+                    console.log("Creating new user with UID:", userId);
+
+                    // التحقق من عدم وجود ملف شخصي لهذا UID مسبقاً
+                    const existingProfileRef = doc(db, `users/${userId}/userProfile`, userId);
+                    const existingProfileSnap = await getDoc(existingProfileRef);
+                    
+                    if (existingProfileSnap.exists()) {
+                        // يوجد ملف شخصي مسبق، قم بتحديثه
+                        await updateDoc(existingProfileRef, {
+                            fullName: fullName,
+                            phoneNumber: fullPhoneNumber,
+                            updatedAt: new Date().toISOString()
+                        });
+                        console.log("Updated existing user profile in Firestore.");
+                        alertUserMessage('تم تحديث بيانات حسابك بنجاح!', 'success');
+                    } else {
+                        // إنشاء ملف شخصي جديد
+                        const newUserData = {
+                            fullName: fullName,
+                            phoneNumber: fullPhoneNumber,
+                            profilePicUrl: 'https://placehold.co/100x100/eeeeee/333333?text=User',
+                            createdAt: new Date().toISOString()
+                        };
+                        
+                        await setDoc(existingProfileRef, newUserData);
+                        console.log("New user profile created in Firestore.");
+                        alertUserMessage('تم إنشاء حساب جديد بنجاح!', 'success');
+                    }
+
+                    // تحديث currentUserProfile
+                    const updatedProfileSnap = await getDoc(existingProfileRef);
+                    currentUserProfile = updatedProfileSnap.data();
+                }
 
                 // التحقق من المطور بناءً على UID
                 if (userId === DEVELOPER_UID) {
@@ -1355,19 +1516,24 @@ const setupEventListeners = () => {
                      console.log("Admin status updated immediately based on UID.");
                 }
 
-                await fetchUserProfile(userId);
                 await fetchAdminStatus();
 
-                alertUserMessage('تم التسجيل/تسجيل الدخول بنجاح!', 'success');
-                //تغيير كلمة "حسابي" إلى أيقونة بروفايل بعد تسجيل الدخول
+                // تغيير كلمة "حسابي" إلى أيقونة بروفايل بعد تسجيل الدخول
                 uiElements.loginProfileBtn.innerHTML = '<img id="profile-icon" src="https://cdn-icons-png.flaticon.com/512/3135/3135715.png" alt="Profile" class="w-6 h-6">';
+
+                // تحديث UI العامة
+                if (uiElements.loginProfileText) uiElements.loginProfileText.textContent = 'حسابي';
+                if (uiElements.profileDetailsLogoutBtn) uiElements.profileDetailsLogoutBtn.classList.remove('hidden');
+                if (uiElements.profileDetailsLoginBtn) uiElements.profileDetailsLoginBtn.classList.add('hidden');
 
                 // إذا كان المستخدم أدمن، أظهر رسالة خاصة وعدد المستخدمين
                 if (userId === DEVELOPER_UID) {
                     setTimeout(() => {
                         alertUserMessage('مرحباً أدمن! تم تفعيل صلاحيات الإدارة.', 'success');
-                        fetchAndDisplayUserCount();
                     }, 2000);
+                    setTimeout(() => {
+                        fetchAndDisplayUserCount();
+                    }, 3000);
                 }
 
                 setTimeout(() => {
@@ -1613,6 +1779,7 @@ const setupEventListeners = () => {
             const price = parseFloat(uiElements.productPriceInput.value);
             const category = uiElements.productCategorySelect.value;
             const freeDelivery = document.getElementById('product-free-delivery').checked;
+            const availability = document.getElementById('product-availability').value;
 
             // جمع روابط الصور الخمسة
             const imageUrls = [];
@@ -1638,6 +1805,7 @@ const setupEventListeners = () => {
                     imageUrl: imageUrls[0], // الاحتفاظ بالحقل القديم للتوافق
                     category,
                     freeDelivery,
+                    availability: availability || '',
                     createdAt: new Date().toISOString()
                 });
                 console.log("Product successfully added to Firestore with ID:", docRef.id);
@@ -1734,6 +1902,7 @@ const setupEventListeners = () => {
             const price = parseFloat(uiElements.editProductPriceInput.value);
             const category = uiElements.editProductCategorySelect.value;
             const freeDelivery = document.getElementById('edit-product-free-delivery').checked;
+            const availability = document.getElementById('edit-product-availability').value;
 
             // جمع روابط الصور الخمسة
             const imageUrls = [];
@@ -1758,7 +1927,8 @@ const setupEventListeners = () => {
                     imageUrls, // استخدام مجموعة الصور الجديدة
                     imageUrl: imageUrls[0], // الاحتفاظ بالحقل القديم للتوافق
                     category,
-                    freeDelivery
+                    freeDelivery,
+                    availability: availability || ''
                 });
                 alertUserMessage('تم تعديل المنتج بنجاح!', 'success');
                 setTimeout(() => {
