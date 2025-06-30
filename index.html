@@ -6,10 +6,9 @@
     <meta name="description" content="مارك ستور موقع يوفرلك جميع منتجات الگيمنك بافضل جودة وسعر، جرب تطلب منا و استمتع بالتجربة">
     <meta name="keywords" content="گيمنك, العاب, ماوس, كيبورد, سماعات, العراق">
     <meta name="author" content="Mark Store">
-    <meta name="google-site-verification" content="19tn4gv8JJ4kpIy4XVOiteg09uhDycwpOqLZAh8DChw" />
     <meta property="og:title" content="MARKSTOR - متجر منتجات الگيمنك">
     <meta property="og:description" content="مارك ستور موقع يوفرلك جميع منتجات الگيمنك بافضل جودة وسعر، جرب تطلب منا و استمتع بالتجربة">
-    <meta property="og:image" content="./attached_assets/logo.png">
+    <meta property="og:image" content="logo.png">
     <meta property="og:type" content="website">
     <link rel="icon" type="image/png" href="logo.png">
     <title>MARKSTOR - متجر منتجات الگيمنك</title>
@@ -86,7 +85,7 @@
                             متجر <span class="text-transparent bg-clip-text bg-gradient-to-l from-blue-400 to-purple-400">مارك ستور</span>
                         </h1>
                         <h2 class="text-2xl lg:text-3xl font-semibold text-purple-200">
-                            قم ببناء سيت اب خاص بك معنا
+                            قم ببناء السيت اب خاص بك معنا
                         </h2>
                         <h3 class="text-lg lg:text-xl text-purple-300 font-medium">
                             افضل المنتجات جودة وسعر
@@ -313,6 +312,7 @@
                         <!-- التصنيف والسعر -->
                         <div class="bg-purple-800 p-4 rounded-lg">
                             <p id="product-detail-category" class="text-purple-300 text-sm mb-2">القسم: نوع القسم</p>
+                            <div id="product-detail-availability" class="text-sm mb-2"></div>
                             <p id="product-detail-price" class="text-3xl font-bold text-green-400">0 د.ع</p>
                         </div>
                         
@@ -350,7 +350,7 @@
                         </div>
                         
                         <!-- أزرار العمليات -->
-                        <div class="space-y-3 sticky bottom-0 bg-gradient-to-t from-purple-900 to-transparent pt-4">
+                        <div id="product-detail-buttons" class="space-y-3 sticky bottom-0 bg-gradient-to-t from-purple-900 to-transparent pt-4">
                             <button id="add-to-cart-detail-btn" class="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-lg flex items-center justify-center gap-2">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13h10M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"></path>
@@ -511,11 +511,21 @@
                         <option value="">اختر قسمًا</option>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label class="flex items-center text-white">
-                        <input type="checkbox" id="product-free-delivery" class="ml-2 w-4 h-4 text-green-600 rounded focus:ring-green-500">
-                        <span>توصيل مجاني</span>
-                    </label>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="flex items-center text-white">
+                            <input type="checkbox" id="product-free-delivery" class="ml-2 w-4 h-4 text-green-600 rounded focus:ring-green-500">
+                            <span>توصيل مجاني</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label for="product-availability" class="block text-sm font-medium text-white mb-2">حالة التوفر</label>
+                        <select id="product-availability" class="w-full px-3 py-2 rounded-lg focus:outline-none font-medium" style="background-color: rgba(255, 255, 255, 0.95); border: 2px solid #6b46c1; color: #1a012a;">
+                            <option value="">غير محدد</option>
+                            <option value="available">متوفر</option>
+                            <option value="sold">مباع</option>
+                        </select>
+                    </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300">إضافة المنتج</button>
                 <div id="add-product-message" class="mt-4 text-center"></div>
@@ -566,11 +576,21 @@
                         <option value="">اختر قسمًا</option>
                     </select>
                 </div>
-                <div class="mb-4">
-                    <label class="flex items-center text-white">
-                        <input type="checkbox" id="edit-product-free-delivery" class="ml-2 w-4 h-4 text-green-600 rounded focus:ring-green-500">
-                        <span>توصيل مجاني</span>
-                    </label>
+                <div class="grid md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="flex items-center text-white">
+                            <input type="checkbox" id="edit-product-free-delivery" class="ml-2 w-4 h-4 text-green-600 rounded focus:ring-green-500">
+                            <span>توصيل مجاني</span>
+                        </label>
+                    </div>
+                    <div>
+                        <label for="edit-product-availability" class="block text-sm font-medium text-white mb-2">حالة التوفر</label>
+                        <select id="edit-product-availability" class="w-full px-3 py-2 rounded-lg focus:outline-none font-medium" style="background-color: rgba(255, 255, 255, 0.95); border: 2px solid #6b46c1; color: #1a012a;">
+                            <option value="">غير محدد</option>
+                            <option value="available">متوفر</option>
+                            <option value="sold">مباع</option>
+                        </select>
+                    </div>
                 </div>
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300">حفظ التعديلات</button>
                 <div id="edit-product-message" class="mt-4 text-center"></div>
