@@ -19,7 +19,7 @@ const TELEGRAM_BOT_TOKEN = '7570266115:AAGZUk96YHFewFpDlqkVpbDT6PwyZJ2ZVmE';
 const TELEGRAM_CHAT_ID = '1526903621';
 
 // Developer UID - معرف المطور من Firebase
-const DEVELOPER_UID = 'QVHfwxqfe7UY5C4AoGU7BeE1MYo2';
+const DEVELOPER_UID = 'NrXWrgBSsGfd9x8iTj8rvAQmoxI3';
 
 // Iraqi Governorates
 const iraqiGovernorates = [
