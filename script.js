@@ -921,12 +921,26 @@ const displayCart = () => {
         uiElements.cartSummaryDiv.classList.add('hidden');
         uiElements.checkoutButton.classList.add('hidden');
     } else {
+        // التحقق من وجود منتجات بدون توصيل مجاني
+        let hasNonFreeDeliveryItems = false;
+        
         currentCart.forEach(item => {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
             itemCount += item.quantity;
+            
+            // البحث عن المنتج في قاعدة البيانات للتحقق من التوصيل المجاني
+            const productData = productsData.find(p => p.id === item.productId);
+            if (productData && !productData.freeDelivery) {
+                hasNonFreeDeliveryItems = true;
+            }
+            
             const formattedItemPrice = Math.round(item.price).toLocaleString('en-US');
             const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
+
+            // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
+            const freeDeliveryBadge = (productData && productData.freeDelivery) ? 
+                '<span class="text-xs bg-green-600 text-white px-2 py-1 rounded ml-2">توصيل مجاني</span>' : '';
 
             const cartItemHtml = `
                 <div class="flex items-center justify-between border-b border-purple-700 py-3">
@@ -934,7 +948,10 @@ const displayCart = () => {
                         <img src="${item.imageUrl || 'https://placehold.co/50x50/1a012a/ffffff?text=Item'}" alt="${item.name}" class="w-12 h-12 object-cover rounded-md ml-4" onerror="this.onerror=null;this.src='https://placehold.co/50x50/1a012a/ffffff?text=Item';">
                         <div>
                             <h4 class="font-semibold text-white">${item.name}</h4>
-                            <p class="text-sm text-purple-300">${formattedItemPrice} د.ع x ${item.quantity}</p>
+                            <div class="flex items-center">
+                                <p class="text-sm text-purple-300">${formattedItemPrice} د.ع x ${item.quantity}</p>
+                                ${freeDeliveryBadge}
+                            </div>
                         </div>
                     </div>
                     <div class="flex items-center">
@@ -947,8 +964,46 @@ const displayCart = () => {
             `;
             uiElements.cartItemsContainer.insertAdjacentHTML('beforeend', cartItemHtml);
         });
+
+        // تحديد رسوم التوصيل
+        const deliveryFee = hasNonFreeDeliveryItems ? 5000 : 0;
+        const grandTotal = total + deliveryFee;
+
+        // عرض تفاصيل المجموع
+        let summaryHtml = `
+            <div class="flex justify-between items-center text-lg font-semibold">
+                <span>المجموع الفرعي:</span>
+                <span>${Math.round(total).toLocaleString('en-US')} د.ع</span>
+            </div>
+        `;
+
+        if (hasNonFreeDeliveryItems) {
+            summaryHtml += `
+                <div class="flex justify-between items-center text-sm text-purple-300 mt-2">
+                    <span>رسوم التوصيل:</span>
+                    <span>${Math.round(deliveryFee).toLocaleString('en-US')} د.ع</span>
+                </div>
+                <div class="flex justify-between items-center text-xl font-bold text-green-400 mt-2 pt-2 border-t border-purple-600">
+                    <span>المجموع الكلي (مع التوصيل):</span>
+                    <span>${Math.round(grandTotal).toLocaleString('en-US')} د.ع</span>
+                </div>
+            `;
+        } else {
+            summaryHtml += `
+                <div class="flex justify-between items-center text-sm text-green-400 mt-2">
+                    <span>التوصيل:</span>
+                    <span>مجاني</span>
+                </div>
+                <div class="flex justify-between items-center text-xl font-bold text-green-400 mt-2 pt-2 border-t border-purple-600">
+                    <span>المجموع الكلي:</span>
+                    <span>${Math.round(total).toLocaleString('en-US')} د.ع</span>
+                </div>
+            `;
+        }
+
         if (userId && currentUserProfile) {
             uiElements.cartSummaryDiv.classList.remove('hidden');
+            uiElements.cartSummaryDiv.innerHTML = summaryHtml;
             uiElements.checkoutButton.classList.remove('hidden');
         } else {
             uiElements.cartSummaryDiv.classList.add('hidden');
@@ -1288,19 +1343,57 @@ const populateCheckoutModalDirectPurchase = (product) => {
     uiElements.checkoutProductsList.innerHTML = '';
     const itemTotal = product.price;
     const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
+    
+    // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
+    const freeDeliveryBadge = product.freeDelivery ? 
+        '<span class="text-xs bg-green-600 text-white px-1 py-0.5 rounded mr-2">توصيل مجاني</span>' : '';
+    
     const productItemHtml = `
-        <div class="flex items-center justify-between">
+        <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
                 <img src="${product.imageUrl || 'https://placehold.co/40x40/1a012a/ffffff?text=Item'}" alt="${product.name}" class="w-10 h-10 object-cover rounded-md ml-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/1a012a/ffffff?text=Item';">
-                <span class="text-sm font-medium text-white">${product.name} (x1)</span>
+                <div class="flex flex-col">
+                    <span class="text-sm font-medium text-white">${product.name} (x1)</span>
+                    ${freeDeliveryBadge}
+                </div>
             </div>
             <span class="text-sm font-medium text-white">${formattedItemTotal} د.ع</span>
         </div>
     `;
     uiElements.checkoutProductsList.insertAdjacentHTML('beforeend', productItemHtml);
 
-    const deliveryFee = 5000;
+    // تحديد رسوم التوصيل بناءً على خاصية التوصيل المجاني للمنتج
+    const deliveryFee = product.freeDelivery ? 0 : 5000;
     const grandTotal = itemTotal + deliveryFee;
+
+    // عرض تفاصيل المجموع
+    let summaryHtml = `
+        <div class="border-t border-purple-600 pt-2 mt-2">
+            <div class="flex justify-between text-sm">
+                <span>المجموع الفرعي:</span>
+                <span>${formattedItemTotal} د.ع</span>
+            </div>
+    `;
+
+    if (!product.freeDelivery) {
+        summaryHtml += `
+            <div class="flex justify-between text-sm mt-1">
+                <span>رسوم التوصيل:</span>
+                <span>${Math.round(deliveryFee).toLocaleString('en-US')} د.ع</span>
+            </div>
+        `;
+    } else {
+        summaryHtml += `
+            <div class="flex justify-between text-sm text-green-400 mt-1">
+                <span>التوصيل:</span>
+                <span>مجاني</span>
+            </div>
+        `;
+    }
+
+    summaryHtml += `</div>`;
+    uiElements.checkoutProductsList.insertAdjacentHTML('beforeend', summaryHtml);
+
     uiElements.checkoutGrandTotal.textContent = `${Math.round(grandTotal).toLocaleString('en-US')} د.ع`;
 };
 
@@ -1328,15 +1421,32 @@ const populateCheckoutModal = () => {
 
     uiElements.checkoutProductsList.innerHTML = '';
     let orderSubtotal = 0;
+    let hasNonFreeDeliveryItems = false;
+
     currentCart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         orderSubtotal += itemTotal;
+        
+        // البحث عن المنتج في قاعدة البيانات للتحقق من التوصيل المجاني
+        const productData = productsData.find(p => p.id === item.productId);
+        if (productData && !productData.freeDelivery) {
+            hasNonFreeDeliveryItems = true;
+        }
+        
         const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
+        
+        // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
+        const freeDeliveryBadge = (productData && productData.freeDelivery) ? 
+            '<span class="text-xs bg-green-600 text-white px-1 py-0.5 rounded mr-2">توصيل مجاني</span>' : '';
+        
         const productItemHtml = `
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center">
                     <img src="${item.imageUrl || 'https://placehold.co/40x40/1a012a/ffffff?text=Item'}" alt="${item.name}" class="w-10 h-10 object-cover rounded-md ml-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/1a012a/ffffff?text=Item';">
-                    <span class="text-sm font-medium text-white">${item.name} (x${item.quantity})</span>
+                    <div class="flex flex-col">
+                        <span class="text-sm font-medium text-white">${item.name} (x${item.quantity})</span>
+                        ${freeDeliveryBadge}
+                    </div>
                 </div>
                 <span class="text-sm font-medium text-white">${formattedItemTotal} د.ع</span>
             </div>
@@ -1344,8 +1454,38 @@ const populateCheckoutModal = () => {
         uiElements.checkoutProductsList.insertAdjacentHTML('beforeend', productItemHtml);
     });
 
-    const deliveryFee = 5000;
+    // تحديد رسوم التوصيل
+    const deliveryFee = hasNonFreeDeliveryItems ? 5000 : 0;
     const grandTotal = orderSubtotal + deliveryFee;
+
+    // عرض تفاصيل المجموع
+    let summaryHtml = `
+        <div class="border-t border-purple-600 pt-2 mt-2">
+            <div class="flex justify-between text-sm">
+                <span>المجموع الفرعي:</span>
+                <span>${Math.round(orderSubtotal).toLocaleString('en-US')} د.ع</span>
+            </div>
+    `;
+
+    if (hasNonFreeDeliveryItems) {
+        summaryHtml += `
+            <div class="flex justify-between text-sm mt-1">
+                <span>رسوم التوصيل:</span>
+                <span>${Math.round(deliveryFee).toLocaleString('en-US')} د.ع</span>
+            </div>
+        `;
+    } else {
+        summaryHtml += `
+            <div class="flex justify-between text-sm text-green-400 mt-1">
+                <span>التوصيل:</span>
+                <span>مجاني</span>
+            </div>
+        `;
+    }
+
+    summaryHtml += `</div>`;
+    uiElements.checkoutProductsList.insertAdjacentHTML('beforeend', summaryHtml);
+
     uiElements.checkoutGrandTotal.textContent = `${Math.round(grandTotal).toLocaleString('en-US')} د.ع`;
 };
 
@@ -1695,13 +1835,31 @@ const setupEventListeners = () => {
 
                 orderMessage += `*تفاصيل الطلب:*\n`;
                 let cartTotalForBot = 0;
+                let hasNonFreeDeliveryItems = false;
+
                 currentCart.forEach((item, index) => {
-                    orderMessage += `${index + 1}. ${item.name} (${item.quantity}x) - ${Math.round(item.price).toLocaleString('en-US')} د.ع = ${Math.round(item.price * item.quantity).toLocaleString('en-US')} د.ع\n`;
+                    // البحث عن المنتج للتحقق من التوصيل المجاني
+                    const productData = productsData.find(p => p.id === item.productId);
+                    const freeDeliveryText = (productData && productData.freeDelivery) ? ' (توصيل مجاني)' : '';
+                    
+                    if (productData && !productData.freeDelivery) {
+                        hasNonFreeDeliveryItems = true;
+                    }
+                    
+                    orderMessage += `${index + 1}. ${item.name} (${item.quantity}x)${freeDeliveryText} - ${Math.round(item.price).toLocaleString('en-US')} د.ع = ${Math.round(item.price * item.quantity).toLocaleString('en-US')} د.ع\n`;
                     cartTotalForBot += (item.price * item.quantity);
                 });
+                
                 orderMessage += `\nالمجموع الفرعي: ${Math.round(cartTotalForBot).toLocaleString('en-US')} د.ع\n`;
-                orderMessage += `رسوم التوصيل: 5,000 د.ع\n`;
-                orderMessage += `*المجموع الكلي: ${Math.round(cartTotalForBot + 5000).toLocaleString('en-US')} د.ع (بما في ذلك التوصيل)*\n\n`;
+                
+                const deliveryFee = hasNonFreeDeliveryItems ? 5000 : 0;
+                if (hasNonFreeDeliveryItems) {
+                    orderMessage += `رسوم التوصيل: 5,000 د.ع\n`;
+                    orderMessage += `*المجموع الكلي: ${Math.round(cartTotalForBot + deliveryFee).toLocaleString('en-US')} د.ع (بما في ذلك التوصيل)*\n\n`;
+                } else {
+                    orderMessage += `رسوم التوصيل: مجاني (جميع المنتجات لها توصيل مجاني)\n`;
+                    orderMessage += `*المجموع الكلي: ${Math.round(cartTotalForBot).toLocaleString('en-US')} د.ع*\n\n`;
+                }
                 orderMessage += `*ملاحظات الدفع والتوصيل:*\n`;
                 orderMessage += `الدفع عند الاستلام\n`;
                 orderMessage += `التوصيل لجميع محافظات العراق\n`;
