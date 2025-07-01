@@ -103,6 +103,7 @@ html {
 
   .product-card-hover img {
     height: 120px !important;
+    object-fit: contain !important;
   }
 
   .product-card-hover .text-xl {
@@ -225,6 +226,14 @@ html {
 
 .product-card-hover:hover {
   transform: translateY(-2px);
+}
+
+.product-card-hover img {
+  object-fit: contain;
+  background-color: white;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  image-rendering: pixelated;
 }
 
 /* تحسين الأزرار */
