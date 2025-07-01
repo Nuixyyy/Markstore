@@ -64,21 +64,21 @@
                 <div class="absolute inset-0 opacity-10">
                     <div class="absolute inset-0" style="background-image: radial-gradient(circle at 25% 25%, #6b46c1 0%, transparent 50%), radial-gradient(circle at 75% 75%, #8b5cf6 0%, transparent 50%);"></div>
                 </div>
-                
+
                 <div class="relative z-10 text-center p-8 lg:p-12">
                     <!-- Logo Image -->
                     <div class="flex justify-center mb-8">
                         <div class="relative">
                             <!-- Logo Image with transparent background -->
                             <img src="logo.png" alt="مارك ستور" class="w-64 h-64 lg:w-80 lg:h-80 object-contain filter drop-shadow-2xl bg-transparent">
-                            
+
                             <!-- Floating Elements -->
                             <div class="absolute -top-4 -right-4 w-8 h-8 bg-blue-400 rounded-full animate-pulse"></div>
                             <div class="absolute top-1/2 -left-6 w-6 h-6 bg-purple-400 rounded-full animate-bounce"></div>
                             <div class="absolute -bottom-2 right-1/3 w-4 h-4 bg-green-400 rounded-full animate-ping"></div>
                         </div>
                     </div>
-                    
+
                     <!-- Content -->
                     <div class="space-y-6">
                         <h1 class="text-4xl lg:text-5xl font-bold text-white leading-tight">
@@ -101,7 +101,7 @@
                         </button>
                     </div>
                 </div>
-                
+
                 <!-- Decorative Bottom Wave -->
                 <div class="absolute bottom-0 left-0 right-0">
                     <svg viewBox="0 0 1200 120" preserveAspectRatio="none" class="w-full h-8 fill-current text-purple-900 opacity-50">
@@ -190,6 +190,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                     </svg>
                     <span class="text-xs mt-1">إضافة منتج</span>
+                </button>
+                <button id="manage-developers-btn" class="flex flex-col items-center text-white hover:text-purple-300 transition duration-300 hidden">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"></path>
+                    </svg>
+                    <span class="text-xs mt-1">إدارة المطورين</span>
                 </button>
             </div>
             <div id="developer-status" class="hidden">
@@ -287,7 +293,7 @@
                     </svg>
                 </button>
             </div>
-            
+
             <!-- Content with scroll -->
             <div class="overflow-y-auto max-h-[calc(90vh-80px)] p-6">
                 <div class="grid lg:grid-cols-2 gap-8">
@@ -300,13 +306,13 @@
                                 <span id="current-image-index">1</span> / <span id="total-images">1</span>
                             </div>
                         </div>
-                        
+
                         <!-- الصور المصغرة في صف واحد تحت الصورة الرئيسية -->
                         <div class="flex justify-center gap-2" id="product-detail-thumbnails">
                             <!-- سيتم ملؤها بواسطة JavaScript -->
                         </div>
                     </div>
-                    
+
                     <!-- معلومات المنتج -->
                     <div class="space-y-6">
                         <!-- التصنيف والسعر -->
@@ -315,7 +321,7 @@
                             <div id="product-detail-availability" class="text-sm mb-2"></div>
                             <p id="product-detail-price" class="text-3xl font-bold text-green-400">0 د.ع</p>
                         </div>
-                        
+
                         <!-- الوصف -->
                         <div class="bg-purple-800 p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-white mb-3">وصف المنتج</h4>
@@ -323,7 +329,7 @@
                                 وصف المنتج
                             </div>
                         </div>
-                        
+
                         <!-- المميزات -->
                         <div class="bg-purple-800 p-4 rounded-lg">
                             <h4 class="text-lg font-semibold text-white mb-3">المميزات</h4>
@@ -348,7 +354,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- أزرار العمليات -->
                         <div id="product-detail-buttons" class="space-y-3 sticky bottom-0 bg-gradient-to-t from-purple-900 to-transparent pt-4">
                             <button id="add-to-cart-detail-btn" class="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-lg flex items-center justify-center gap-2">
@@ -645,21 +651,64 @@
             </form>
         </div>
     </div>
+
+    <!-- Manage Developers Modal -->
+    <div id="manage-developers-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="rounded-lg p-6 w-full max-w-2xl mx-4 max-h-96 overflow-y-auto" style="background-color: #1a012a;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">إدارة المطورين</h3>
+                <button class="modal-close-btn text-white hover:text-purple-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Add Developer Form -->
+            <div class="mb-6 p-4 bg-purple-800 rounded-lg">
+                <h4 class="text-lg font-semibold text-white mb-3">إضافة مطور جديد</h4>
+                <form id="add-developer-form">
+                    <div class="flex gap-2">
+                        <input type="text" id="new-developer-uid" required placeholder="أدخل UID المطور" class="flex-1 px-3 py-2 rounded-lg focus:outline-none font-medium" style="background-color: rgba(255, 255, 255, 0.95); border: 2px solid #6b46c1; color: #1a012a;">
+                        <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg hover:bg-green-700 transition duration-300">إضافة</button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Developers List -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">قائمة المطورين</h4>
+                <div id="developers-list" class="space-y-2">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <!-- Instructions -->
+            <div class="mt-6 p-3 bg-blue-900 rounded-lg">
+                <h5 class="text-sm font-semibold text-blue-200 mb-2">تعليمات:</h5>
+                <ul class="text-xs text-blue-300 space-y-1">
+                    <li>• يمكن الحصول على UID من Firebase Authentication</li>
+                    <li>• المطور الرئيسي لا يمكن حذفه</li>
+                    <li>• جميع المطورين لهم نفس الصلاحيات عدا إدارة المطورين</li>
+                </ul>
+            </div>
+        </div>
+    </div>
     <script>
         // Developer mode access using UID and Firebase (replace with your actual Firebase config)
         const adminUID = 'your_admin_uid'; // Replace with your admin UID
         const firebaseConfig = {
             // Your Firebase configuration here
         };
-    
+
         // Initialize Firebase (if not already initialized)
         // firebase.initializeApp(firebaseConfig);
-    
+
         // Function to check if the user is an admin based on their UID
         function isAdminUID(uid) {
             return uid === adminUID;
         }
-    
+
         // Example usage (you'll need to adapt this to your actual authentication flow)
         // firebase.auth().onAuthStateChanged(user => {
         //     if (user) {
