@@ -18,8 +18,11 @@ const MY_FIREBASE_CONFIG = {
 const TELEGRAM_BOT_TOKEN = '7570266115:AAGZUk96YHFewFpDlqkVpbDT6PwyZJ2ZVmE';
 const TELEGRAM_CHAT_ID = '1526903621';
 
-// Developer UID - معرف المطور من Firebase
-const DEVELOPER_UID = 'NrXWrgBSsGfd9x8iTj8rvAQmoxI3';
+// Developer UID - معرف المطور الرئيسي من Firebase
+const MAIN_DEVELOPER_UID = 'NrXWrgBSsGfd9x8iTj8rvAQmoxI3';
+
+// قائمة معرفات المطورين
+let developerUIDs = [MAIN_DEVELOPER_UID];
 
 // Iraqi Governorates
 const iraqiGovernorates = [
@@ -321,31 +324,45 @@ const fetchUserProfile = async (uid) => {
 
 const fetchAdminStatus = async () => {
     try {
-        const settingsDocRef = doc(db, `settings`, 'appSettings');
-        const settingsDocSnap = await getDoc(settingsDocRef);
+        // جلب قائمة المطورين من Firestore
+        const developersDocRef = doc(db, `settings`, 'developers');
+        const developersDocSnap = await getDoc(developersDocRef);
 
-        if (settingsDocSnap.exists()) {
-            const settingsData = settingsDocSnap.data();
-            if (settingsData.adminId === userId) {
-                isAdmin = true;
-                if (uiElements.developerButtons) uiElements.developerButtons.classList.remove('hidden');
-                if (uiElements.developerStatus) uiElements.developerStatus.classList.remove('hidden');
-                console.log("Current user is admin.");
-                // جلب وعرض عدد المستخدمين للمطور
-                setTimeout(() => {
-                    fetchAndDisplayUserCount();
-                }, 2000);
-            } else {
-                isAdmin = false;
-                if (uiElements.developerButtons) uiElements.developerButtons.classList.add('hidden');
-                if (uiElements.developerStatus) uiElements.developerStatus.classList.add('hidden');
-                console.log("Current user is not admin.");
+        if (developersDocSnap.exists()) {
+            const developersData = developersDocSnap.data();
+            developerUIDs = developersData.uids || [MAIN_DEVELOPER_UID];
+        } else {
+            // إنشاء وثيقة المطورين إذا لم تكن موجودة
+            await setDoc(developersDocRef, { uids: [MAIN_DEVELOPER_UID] });
+            developerUIDs = [MAIN_DEVELOPER_UID];
+        }
+
+        // التحقق من كون المستخدم الحالي مطور
+        if (developerUIDs.includes(userId)) {
+            isAdmin = true;
+            if (uiElements.developerButtons) uiElements.developerButtons.classList.remove('hidden');
+            if (uiElements.developerStatus) uiElements.developerStatus.classList.remove('hidden');
+            console.log("Current user is admin/developer.");
+            
+            // إظهار زر إدارة المطورين فقط للمطور الرئيسي
+            const manageDevelopersBtn = document.getElementById('manage-developers-btn');
+            if (manageDevelopersBtn) {
+                if (userId === MAIN_DEVELOPER_UID) {
+                    manageDevelopersBtn.classList.remove('hidden');
+                } else {
+                    manageDevelopersBtn.classList.add('hidden');
+                }
             }
+            
+            // جلب وعرض عدد المستخدمين للمطور
+            setTimeout(() => {
+                fetchAndDisplayUserCount();
+            }, 2000);
         } else {
             isAdmin = false;
             if (uiElements.developerButtons) uiElements.developerButtons.classList.add('hidden');
             if (uiElements.developerStatus) uiElements.developerStatus.classList.add('hidden');
-            console.log("No admin set yet in Firestore settings.");
+            console.log("Current user is not admin/developer.");
         }
     }
     catch (error) {
@@ -554,7 +571,7 @@ const displayProducts = (products) => {
         
         const productCard = `
             <div id="product-${product.id}" class="bg-purple-800 rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-xl product-card-hover border border-purple-700">
-                <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-cover rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';">
+                <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-contain bg-white rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
                 <div class="p-4 text-right">
                     <h3 class="text-xl font-semibold text-white truncate">${product.name}</h3>
                     <p class="text-purple-300 text-sm mt-1">القسم: ${
@@ -722,13 +739,16 @@ const openProductDetailModal = (product) => {
     // عرض الصورة الرئيسية (الأولى)
     productDetailMainImage.src = productImages[0];
     productDetailMainImage.alt = product.name;
+    productDetailMainImage.style.objectFit = 'contain';
+    productDetailMainImage.style.backgroundColor = 'white';
+    productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
 
     // إنشاء الصور المصغرة
     productDetailThumbnails.innerHTML = '';
     productImages.forEach((imageUrl, index) => {
         const thumbnailHtml = `
             <div class="cursor-pointer border-2 border-transparent hover:border-purple-400 rounded-lg overflow-hidden transition duration-200 ${index === 0 ? 'border-purple-600' : ''}" data-image-index="${index}">
-                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-12 h-12 object-cover" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a012a/ffffff?text=${index + 1}';">
+                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-12 h-12 object-contain bg-white" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a012a/ffffff?text=${index + 1}';" style="image-rendering: -webkit-optimize-contrast;">
             </div>
         `;
         productDetailThumbnails.insertAdjacentHTML('beforeend', thumbnailHtml);
@@ -739,6 +759,9 @@ const openProductDetailModal = (product) => {
         thumbnail.addEventListener('click', (e) => {
             const imageIndex = parseInt(e.currentTarget.dataset.imageIndex);
             productDetailMainImage.src = productImages[imageIndex];
+            productDetailMainImage.style.objectFit = 'contain';
+            productDetailMainImage.style.backgroundColor = 'white';
+            productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
             
             // تحديث عداد الصورة الحالية
             if (currentImageIndex) currentImageIndex.textContent = imageIndex + 1;
@@ -1074,6 +1097,92 @@ const removeFromCart = async (itemId) => {
         console.error("Error removing from cart:", error);
         alertUserMessage(`فشل حذف العنصر من السلة: ${error.message}`, 'error');
     }
+};
+
+// Developer management functions
+const addDeveloper = async (newUID) => {
+    if (userId !== MAIN_DEVELOPER_UID) {
+        alertUserMessage("فقط المطور الرئيسي يمكنه إضافة مطورين جدد.", 'error');
+        return;
+    }
+
+    if (!newUID || newUID.trim() === '') {
+        alertUserMessage("الرجاء إدخال UID صحيح.", 'error');
+        return;
+    }
+
+    const trimmedUID = newUID.trim();
+
+    if (developerUIDs.includes(trimmedUID)) {
+        alertUserMessage("هذا المطور موجود مسبقاً في القائمة.", 'warning');
+        return;
+    }
+
+    try {
+        const updatedUIDs = [...developerUIDs, trimmedUID];
+        const developersDocRef = doc(db, `settings`, 'developers');
+        await setDoc(developersDocRef, { uids: updatedUIDs });
+        
+        developerUIDs = updatedUIDs;
+        alertUserMessage("تم إضافة المطور بنجاح!", 'success');
+        displayDevelopersList();
+    } catch (error) {
+        console.error("Error adding developer:", error);
+        alertUserMessage(`فشل إضافة المطور: ${error.message}`, 'error');
+    }
+};
+
+const removeDeveloper = async (uidToRemove) => {
+    if (userId !== MAIN_DEVELOPER_UID) {
+        alertUserMessage("فقط المطور الرئيسي يمكنه حذف المطورين.", 'error');
+        return;
+    }
+
+    if (uidToRemove === MAIN_DEVELOPER_UID) {
+        alertUserMessage("لا يمكن حذف المطور الرئيسي.", 'error');
+        return;
+    }
+
+    const confirmRemove = await showConfirmationMessage(`هل أنت متأكد من حذف هذا المطور؟\nUID: ${uidToRemove}`);
+    if (!confirmRemove) return;
+
+    try {
+        const updatedUIDs = developerUIDs.filter(uid => uid !== uidToRemove);
+        const developersDocRef = doc(db, `settings`, 'developers');
+        await setDoc(developersDocRef, { uids: updatedUIDs });
+        
+        developerUIDs = updatedUIDs;
+        alertUserMessage("تم حذف المطور بنجاح!", 'success');
+        displayDevelopersList();
+    } catch (error) {
+        console.error("Error removing developer:", error);
+        alertUserMessage(`فشل حذف المطور: ${error.message}`, 'error');
+    }
+};
+
+const displayDevelopersList = () => {
+    const developersList = document.getElementById('developers-list');
+    if (!developersList) return;
+
+    developersList.innerHTML = '';
+    
+    developerUIDs.forEach(uid => {
+        const isMainDeveloper = uid === MAIN_DEVELOPER_UID;
+        const developerItem = `
+            <div class="flex items-center justify-between p-3 bg-purple-800 rounded-lg">
+                <div class="flex-1">
+                    <span class="text-white font-medium">${uid}</span>
+                    ${isMainDeveloper ? '<span class="text-green-400 text-xs mr-2">(المطور الرئيسي)</span>' : ''}
+                </div>
+                ${!isMainDeveloper ? `
+                    <button onclick="removeDeveloper('${uid}')" class="text-red-400 hover:text-red-300 text-sm px-2 py-1 rounded">
+                        حذف
+                    </button>
+                ` : ''}
+            </div>
+        `;
+        developersList.insertAdjacentHTML('beforeend', developerItem);
+    });
 };
 
 // Admin category functions
@@ -1642,13 +1751,7 @@ const setupEventListeners = () => {
                 }
 
                 // التحقق من المطور بناءً على UID
-                if (userId === DEVELOPER_UID) {
-                     const settingsDocRef = doc(db, `settings`, 'appSettings');
-                     const settingsDocSnap = await getDoc(settingsDocRef);
-                     if (!settingsDocSnap.exists() || settingsDocSnap.data().adminId !== userId) {
-                        await setDoc(settingsDocRef, { adminId: userId }, { merge: true });
-                        console.log("Admin ID set in settings.");
-                     }
+                if (developerUIDs.includes(userId)) {
                      // تحديث حالة الأدمن فوراً
                      isAdmin = true;
                      if (uiElements.developerButtons) uiElements.developerButtons.classList.remove('hidden');
@@ -1667,9 +1770,10 @@ const setupEventListeners = () => {
                 if (uiElements.profileDetailsLoginBtn) uiElements.profileDetailsLoginBtn.classList.add('hidden');
 
                 // إذا كان المستخدم أدمن، أظهر رسالة خاصة وعدد المستخدمين
-                if (userId === DEVELOPER_UID) {
+                if (developerUIDs.includes(userId)) {
                     setTimeout(() => {
-                        alertUserMessage('مرحباً أدمن! تم تفعيل صلاحيات الإدارة.', 'success');
+                        const adminType = userId === MAIN_DEVELOPER_UID ? 'المطور الرئيسي' : 'مطور';
+                        alertUserMessage(`مرحباً ${adminType}! تم تفعيل صلاحيات الإدارة.`, 'success');
                     }, 2000);
                     setTimeout(() => {
                         fetchAndDisplayUserCount();
@@ -1992,6 +2096,33 @@ const setupEventListeners = () => {
          });
     }
 
+    // Manage developers button
+    const manageDevelopersBtn = document.getElementById('manage-developers-btn');
+    if (manageDevelopersBtn) {
+        manageDevelopersBtn.addEventListener('click', () => {
+            if (userId === MAIN_DEVELOPER_UID) {
+                const manageDevelopersModal = document.getElementById('manage-developers-modal');
+                if (manageDevelopersModal) {
+                    manageDevelopersModal.classList.remove('hidden');
+                    displayDevelopersList();
+                }
+            } else {
+                alertUserMessage("فقط المطور الرئيسي يمكنه إدارة المطورين.", 'error');
+            }
+        });
+    }
+
+    // Add developer form
+    const addDeveloperForm = document.getElementById('add-developer-form');
+    if (addDeveloperForm) {
+        addDeveloperForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const newDeveloperUID = document.getElementById('new-developer-uid').value.trim();
+            await addDeveloper(newDeveloperUID);
+            document.getElementById('new-developer-uid').value = '';
+        });
+    }
+
     // Admin edit category form
     if (uiElements.editCategoryForm) {
         uiElements.editCategoryForm.addEventListener('submit', async (e) => {
@@ -2202,6 +2333,9 @@ const setupEventListeners = () => {
     }
 };
 
+// Make functions available globally for HTML onclick events
+window.removeDeveloper = removeDeveloper;
+
 // Initialize on window load
 window.onload = async () => {
     // Wait for DOM to be fully loaded
@@ -2319,6 +2453,7 @@ window.onload = async () => {
         developerButtons: getUiElement('developer-buttons'),
         bottomAddCategoryBtn: getUiElement('bottom-add-category-btn'),
         bottomAddProductBtn: getUiElement('bottom-add-product-btn'),
+        manageDevelopersBtn: getUiElement('manage-developers-btn'),
 
         // Message Box
         messageBox: getUiElement('message-box'),
