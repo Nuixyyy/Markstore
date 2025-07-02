@@ -634,20 +634,14 @@ const displayProducts = (products) => {
                     quantity: 1
                 }];
 
-                // Store current cart and replace with temp cart
-                const originalCart = [...currentCart];
-                currentCart = tempCart;
+                // حفظ بيانات الطلب المؤقتة
+                orderCartData = [...tempCart];
 
                 // Populate checkout modal with single product
                 populateCheckoutModalDirectPurchase(productToBuy);
 
                 // Open checkout modal
                 if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
-
-                // Restore original cart after checkout modal opens
-                setTimeout(() => {
-                    currentCart = originalCart;
-                }, 100);
             }
         });
     });
@@ -1858,9 +1852,8 @@ const setupEventListeners = () => {
                     quantity: 1
                 }];
 
-                // Store current cart and replace with temp cart
-                const originalCart = [...currentCart];
-                currentCart = tempCart;
+                // حفظ بيانات الطلب المؤقتة
+                orderCartData = [...tempCart];
 
                 // Populate checkout modal with single product
                 populateCheckoutModalDirectPurchase(productToBuy);
@@ -1868,11 +1861,6 @@ const setupEventListeners = () => {
                 // Close product detail modal and open checkout
                 if (uiElements.productDetailModal) uiElements.productDetailModal.classList.add('hidden');
                 if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
-
-                // Restore original cart after checkout modal opens
-                setTimeout(() => {
-                    currentCart = originalCart;
-                }, 100);
             }
         });
     }
@@ -1888,10 +1876,17 @@ const setupEventListeners = () => {
                 alertUserMessage("سلة التسوق فارغة. الرجاء إضافة منتجات.", 'warning');
                 return;
             }
+            
+            // حفظ بيانات السلة الحالية
+            orderCartData = [...currentCart];
+            
             populateCheckoutModal();
             if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
         });
     }
+
+    // متغير لحفظ بيانات الطلب المؤقتة
+    let orderCartData = [];
 
     // Checkout form
     if (uiElements.checkoutForm) {
@@ -1917,6 +1912,14 @@ const setupEventListeners = () => {
             }
 
             try {
+                // استخدام البيانات المحفوظة أو السلة الحالية
+                const cartToProcess = orderCartData.length > 0 ? orderCartData : currentCart;
+                
+                if (cartToProcess.length === 0) {
+                    alertUserMessage('لا توجد منتجات في الطلب.', 'error');
+                    return;
+                }
+
                 let orderMessage = `✅ *طلب جديد!* ✅\n\n`;
                 orderMessage += `*معلومات العميل:*\n`;
                 orderMessage += `الاسم: ${fullName}\n`;
@@ -1941,7 +1944,7 @@ const setupEventListeners = () => {
                 let cartTotalForBot = 0;
                 let hasNonFreeDeliveryItems = false;
 
-                currentCart.forEach((item, index) => {
+                cartToProcess.forEach((item, index) => {
                     // البحث عن المنتج للتحقق من التوصيل المجاني
                     const productData = productsData.find(p => p.id === item.productId);
                     const freeDeliveryText = (productData && productData.freeDelivery) ? ' (توصيل مجاني)' : '';
@@ -1987,12 +1990,19 @@ const setupEventListeners = () => {
                     alertUserMessage('تم تأكيد الطلب بنجاح! سيتم التواصل معك قريباً.', 'success');
                     if (uiElements.checkoutModal) uiElements.checkoutModal.classList.add('hidden');
                     if (uiElements.shoppingCartModal) uiElements.shoppingCartModal.classList.add('hidden');
-                    const cartItemsRef = collection(db, `users/${userId}/cart`);
-                    const cartSnapshot = await getDocs(cartItemsRef);
-                    const deleteCartPromises = [];
-                    cartSnapshot.forEach(doc => deleteCartPromises.push(deleteDoc(doc.ref)));
-                    await Promise.all(deleteCartPromises);
-                    console.log("Cart cleared after successful order.");
+                    
+                    // تنظيف البيانات المؤقتة
+                    orderCartData = [];
+                    
+                    // حذف السلة فقط إذا كان الطلب من السلة العادية وليس "شراء الآن"
+                    if (cartToProcess === currentCart) {
+                        const cartItemsRef = collection(db, `users/${userId}/cart`);
+                        const cartSnapshot = await getDocs(cartItemsRef);
+                        const deleteCartPromises = [];
+                        cartSnapshot.forEach(doc => deleteCartPromises.push(deleteDoc(doc.ref)));
+                        await Promise.all(deleteCartPromises);
+                        console.log("Cart cleared after successful order.");
+                    }
 
                 } else {
                     alertUserMessage(`فشل إرسال الطلب عبر تيليجرام: ${result.description || 'خطأ غير معروف'}`, 'error');
