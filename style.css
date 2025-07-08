@@ -230,10 +230,48 @@ html {
 
 .product-card-hover img {
   object-fit: contain;
-  background-color: white;
+  background-color: transparent;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
+}
+
+/* أنماط خاصة لتصنيف ماوس بادات - عرض في عمود واحد */
+.mousepads-category #products-container {
+  grid-template-columns: 1fr !important;
+  max-width: 600px;
+  margin: 0 auto;
+  gap: 1rem !important;
+}
+
+.mousepads-category .product-card-hover {
+  min-height: auto !important;
+}
+
+.mousepads-category .product-card-hover img {
+  height: 200px !important;
+  background-color: transparent !important;
+  background: transparent !important;
+  backdrop-filter: none !important;
+}
+
+/* إزالة أي خلفية بيضاء من صور الماوس بادات */
+.mousepads-category .product-card-hover img::before,
+.mousepads-category .product-card-hover img::after {
+  display: none !important;
+}
+
+@media (max-width: 640px) {
+  .mousepads-category #products-container {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
+  }
+  
+  .mousepads-category .product-card-hover img {
+    height: 150px !important;
+    background-color: transparent !important;
+    background: transparent !important;
+  }
 }
 
 /* تحسين الأزرار */
