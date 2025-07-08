@@ -42,6 +42,7 @@ let productsData = [];
 let categoriesData = [];
 let reviewsData = [];
 let currentCart = [];
+let orderCartData = [];
 
 let firebaseReadyPromise;
 let resolveFirebaseReady;
@@ -370,45 +371,18 @@ const fetchAdminStatus = async () => {
     }
 };
 
-// دالة البحث عن مستخدم موجود بنفس المعلومات
+// دالة البحث عن مستخدم موجود بنفس المعلومات (محسنة لتجنب مشاكل الأذونات)
 const findExistingUser = async (fullName, phoneNumber) => {
     try {
         console.log("Searching for existing user with:", { fullName, phoneNumber });
-
-        const usersColRef = collection(db, 'users');
-        const usersSnapshot = await getDocs(usersColRef);
-
-        for (const userDoc of usersSnapshot.docs) {
-            try {
-                const userProfileRef = doc(db, `users/${userDoc.id}/userProfile`, userDoc.id);
-                const userProfileSnap = await getDoc(userProfileRef);
-
-                if (userProfileSnap.exists()) {
-                    const userData = userProfileSnap.data();
-                    console.log("Checking user:", { 
-                        id: userDoc.id, 
-                        name: userData.fullName, 
-                        phone: userData.phoneNumber 
-                    });
-
-                    if (userData.fullName === fullName && userData.phoneNumber === phoneNumber) {
-                        console.log("Match found for user:", userDoc.id);
-                        return {
-                            userId: userDoc.id,
-                            data: userData
-                        };
-                    }
-                }
-            } catch (profileError) {
-                console.warn(`Error reading profile for user ${userDoc.id}:`, profileError);
-                continue;
-            }
-        }
-
-        console.log("No existing user found with matching name and phone");
-        return null; // لم يتم العثور على مستخدم مطابق
+        
+        // بما أن Firebase لا يسمح بالوصول لجميع المستخدمين، سنتجاهل هذه الميزة مؤقتاً
+        // وننشئ مستخدم جديد دائماً للتجنب مشاكل الأذونات
+        console.log("Skipping user search due to permission restrictions");
+        return null;
     } catch (error) {
         console.error("Error searching for existing user:", error);
+        // في حالة فشل البحث، نعيد null لإنشاء مستخدم جديد
         return null;
     }
 };
@@ -1917,9 +1891,6 @@ const setupEventListeners = () => {
             }
         });
     }
-
-    // متغير لحفظ بيانات الطلب المؤقتة
-    let orderCartData = [];
 
     // Checkout button
     if (uiElements.checkoutButton) {
