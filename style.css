@@ -236,6 +236,25 @@ html {
   image-rendering: pixelated;
 }
 
+/* قواعد حذف الخلفية البيضاء للمنتجات المحددة */
+.product-card-hover.remove-white-bg img {
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
+  mix-blend-mode: multiply;
+  filter: brightness(1.1) contrast(1.1);
+}
+
+/* تطبيق نفس القواعد على الصور في مودال تفاصيل المنتج */
+.product-detail-remove-white-bg #product-detail-main-image,
+.product-detail-remove-white-bg #product-detail-thumbnails img {
+  background-color: transparent !important;
+  background: transparent !important;
+  background-image: none !important;
+  mix-blend-mode: multiply;
+  filter: brightness(1.1) contrast(1.1);
+}
+
 /* أنماط خاصة لتصنيف ماوس بادات - عرض في عمود واحد */
 .mousepads-category #products-container {
   grid-template-columns: 1fr !important;
