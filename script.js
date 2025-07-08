@@ -569,8 +569,9 @@ const displayProducts = (products) => {
             `;
         }
 
+        const removeWhiteBgClass = product.removeWhiteBackground ? ' remove-white-bg' : '';
         const productCard = `
-            <div id="product-${product.id}" class="bg-purple-800 rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-xl product-card-hover border border-purple-700">
+            <div id="product-${product.id}" class="bg-purple-800 rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-xl product-card-hover border border-purple-700${removeWhiteBgClass}">
                 <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-contain bg-transparent rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
                 <div class="p-4 text-right">
                     <h3 class="text-xl font-semibold text-white truncate">${product.name}</h3>
@@ -780,6 +781,13 @@ const openProductDetailModal = (product) => {
         uiElements.buyNowDetailBtn.dataset.productName = product.name;
         uiElements.buyNowDetailBtn.dataset.productPrice = product.price;
         uiElements.buyNowDetailBtn.dataset.productImage = productImages[0];
+    }
+
+    // تطبيق/إزالة كلاس حذف الخلفية البيضاء على المودال
+    if (product.removeWhiteBackground) {
+        uiElements.productDetailModal.classList.add('product-detail-remove-white-bg');
+    } else {
+        uiElements.productDetailModal.classList.remove('product-detail-remove-white-bg');
     }
 
     uiElements.productDetailModal.classList.remove('hidden');
@@ -1313,6 +1321,12 @@ const openEditProductModal = (product) => {
     const editFreeDeliveryCheckbox = document.getElementById('edit-product-free-delivery');
     if (editFreeDeliveryCheckbox) {
         editFreeDeliveryCheckbox.checked = product.freeDelivery || false;
+    }
+
+    // تعبئة حقل حذف الخلفية البيضاء
+    const editRemoveWhiteBgCheckbox = document.getElementById('edit-product-remove-white-bg');
+    if (editRemoveWhiteBgCheckbox) {
+        editRemoveWhiteBgCheckbox.checked = product.removeWhiteBackground || false;
     }
 
     // تعبئة حقل حالة التوفر
@@ -2084,6 +2098,7 @@ const setupEventListeners = () => {
             const price = parseFloat(uiElements.productPriceInput.value);
             const category = uiElements.productCategorySelect.value;
             const freeDelivery = document.getElementById('product-free-delivery').checked;
+            const removeWhiteBackground = document.getElementById('product-remove-white-bg').checked;
             const availability = document.getElementById('product-availability').value;
 
             // جمع روابط الصور الخمسة
@@ -2110,6 +2125,7 @@ const setupEventListeners = () => {
                     imageUrl: imageUrls[0], // الاحتفاظ بالحقل القديم للتوافق
                     category,
                     freeDelivery,
+                    removeWhiteBackground,
                     availability: availability || '',
                     createdAt: new Date().toISOString()
                 });
@@ -2234,6 +2250,7 @@ const setupEventListeners = () => {
             const price = parseFloat(uiElements.editProductPriceInput.value);
             const category = uiElements.editProductCategorySelect.value;
             const freeDelivery = document.getElementById('edit-product-free-delivery').checked;
+            const removeWhiteBackground = document.getElementById('edit-product-remove-white-bg').checked;
             const availability = document.getElementById('edit-product-availability').value;
 
             // جمع روابط الصور الخمسة
@@ -2260,6 +2277,7 @@ const setupEventListeners = () => {
                     imageUrl: imageUrls[0], // الاحتفاظ بالحقل القديم للتوافق
                     category,
                     freeDelivery,
+                    removeWhiteBackground,
                     availability: availability || ''
                 });
                 alertUserMessage('تم تعديل المنتج بنجاح!', 'success');
