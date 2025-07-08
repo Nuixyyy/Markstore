@@ -1494,6 +1494,9 @@ const populateCheckoutModalDirectPurchase = (product) => {
     const itemTotal = product.price;
     const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
 
+    // استخدام الصورة الرئيسية (الأولى) من مجموعة الصور
+    const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
+
     // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
     const freeDeliveryBadge = product.freeDelivery ? 
         '<span class="text-xs bg-green-600 text-white px-1 py-0.5 rounded mr-2">توصيل مجاني</span>' : '';
@@ -1501,7 +1504,7 @@ const populateCheckoutModalDirectPurchase = (product) => {
     const productItemHtml = `
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
-                <img src="${product.imageUrl || 'https://placehold.co/40x40/1a012a/ffffff?text=Item'}" alt="${product.name}" class="w-10 h-10 object-cover rounded-md ml-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/1a012a/ffffff?text=Item';">
+                <img src="${mainImageUrl || 'https://placehold.co/40x40/1a012a/ffffff?text=Item'}" alt="${product.name}" class="w-10 h-10 object-cover rounded-md ml-2" onerror="this.onerror=null;this.src='https://placehold.co/40x40/1a012a/ffffff?text=Item';">
                 <div class="flex flex-col">
                     <span class="text-sm font-medium text-white">${product.name} (x1)</span>
                     ${freeDeliveryBadge}
@@ -1889,13 +1892,16 @@ const setupEventListeners = () => {
             const productToBuy = productsData.find(p => p.id === productId);
 
             if (productToBuy) {
+                // استخدام الصورة الرئيسية (الأولى) من مجموعة الصور
+                const mainImageUrl = (productToBuy.imageUrls && productToBuy.imageUrls.length > 0) ? productToBuy.imageUrls[0] : productToBuy.imageUrl;
+
                 // Create temporary cart with single product
                 const tempCart = [{
                     id: productToBuy.id,
                     productId: productToBuy.id,
                     name: productToBuy.name,
                     price: productToBuy.price,
-                    imageUrl: productToBuy.imageUrl,
+                    imageUrl: mainImageUrl,
                     quantity: 1
                 }];
 
@@ -1911,6 +1917,9 @@ const setupEventListeners = () => {
             }
         });
     }
+
+    // متغير لحفظ بيانات الطلب المؤقتة
+    let orderCartData = [];
 
     // Checkout button
     if (uiElements.checkoutButton) {
@@ -1931,9 +1940,6 @@ const setupEventListeners = () => {
             if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
         });
     }
-
-    // متغير لحفظ بيانات الطلب المؤقتة
-    let orderCartData = [];
 
     // Checkout form
     if (uiElements.checkoutForm) {
