@@ -343,7 +343,7 @@ const fetchAdminStatus = async () => {
             if (uiElements.developerButtons) uiElements.developerButtons.classList.remove('hidden');
             if (uiElements.developerStatus) uiElements.developerStatus.classList.remove('hidden');
             console.log("Current user is admin/developer.");
-            
+
             // إظهار زر إدارة المطورين فقط للمطور الرئيسي
             const manageDevelopersBtn = document.getElementById('manage-developers-btn');
             if (manageDevelopersBtn) {
@@ -353,7 +353,7 @@ const fetchAdminStatus = async () => {
                     manageDevelopersBtn.classList.add('hidden');
                 }
             }
-            
+
             // جلب وعرض عدد المستخدمين للمطور
             setTimeout(() => {
                 fetchAndDisplayUserCount();
@@ -374,15 +374,15 @@ const fetchAdminStatus = async () => {
 const findExistingUser = async (fullName, phoneNumber) => {
     try {
         console.log("Searching for existing user with:", { fullName, phoneNumber });
-        
+
         const usersColRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersColRef);
-        
+
         for (const userDoc of usersSnapshot.docs) {
             try {
                 const userProfileRef = doc(db, `users/${userDoc.id}/userProfile`, userDoc.id);
                 const userProfileSnap = await getDoc(userProfileRef);
-                
+
                 if (userProfileSnap.exists()) {
                     const userData = userProfileSnap.data();
                     console.log("Checking user:", { 
@@ -390,7 +390,7 @@ const findExistingUser = async (fullName, phoneNumber) => {
                         name: userData.fullName, 
                         phone: userData.phoneNumber 
                     });
-                    
+
                     if (userData.fullName === fullName && userData.phoneNumber === phoneNumber) {
                         console.log("Match found for user:", userDoc.id);
                         return {
@@ -404,7 +404,7 @@ const findExistingUser = async (fullName, phoneNumber) => {
                 continue;
             }
         }
-        
+
         console.log("No existing user found with matching name and phone");
         return null; // لم يتم العثور على مستخدم مطابق
     } catch (error) {
@@ -416,12 +416,12 @@ const findExistingUser = async (fullName, phoneNumber) => {
 // دالة جلب وعرض عدد المستخدمين (للمطور فقط)
 const fetchAndDisplayUserCount = async () => {
     if (!isAdmin) return;
-    
+
     try {
         const usersColRef = collection(db, 'users');
         const usersSnapshot = await getDocs(usersColRef);
         let userCount = 0;
-        
+
         // عد المستخدمين الذين لديهم ملف شخصي مكتمل
         for (const userDoc of usersSnapshot.docs) {
             try {
@@ -439,12 +439,12 @@ const fetchAndDisplayUserCount = async () => {
                 continue;
             }
         }
-        
+
         const userCountElement = document.getElementById('user-count');
         if (userCountElement) {
             userCountElement.textContent = userCount;
         }
-        
+
     } catch (error) {
         console.error("Error fetching user count:", error);
         const userCountElement = document.getElementById('user-count');
@@ -540,21 +540,21 @@ const displayProducts = (products) => {
         const formattedPrice = Math.round(product.price).toLocaleString('en-US');
         // استخدام الصورة الأولى من مجموعة الصور أو الصورة القديمة كـ fallback
         const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
-        
+
         // عرض التوصيل المجاني إذا كان متاحاً
         const freeDeliveryText = product.freeDelivery ? '<p class="text-green-400 text-sm mt-1 font-semibold">توصيل مجاني</p>' : '';
-        
+
         // عرض حالة المنتج (متوفر/مباع) - فقط إذا تم تحديدها وليست فارغة أو غير محدد
         let availabilityText = '';
         let buttonsSection = '';
-        
+
         if (product.availability === 'available') {
             availabilityText = '<p class="text-green-400 text-sm mt-1 font-semibold">متوفر</p>';
         } else if (product.availability === 'sold') {
             availabilityText = '<p class="text-red-400 text-sm mt-1 font-semibold">مباع</p>';
         }
         // إذا كانت availability فارغة أو غير محدد، لن يظهر شيء
-        
+
         // إظهار الأزرار فقط إذا كان المنتج متوفر أو غير محدد (ليس مباع)
         if (product.availability !== 'sold') {
             buttonsSection = `
@@ -568,10 +568,10 @@ const displayProducts = (products) => {
                 </div>
             `;
         }
-        
+
         const productCard = `
             <div id="product-${product.id}" class="bg-purple-800 rounded-lg shadow-lg overflow-hidden cursor-pointer transform transition duration-300 hover:scale-105 hover:shadow-xl product-card-hover border border-purple-700">
-                <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-contain bg-white rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
+                <img src="${mainImageUrl || 'https://placehold.co/600x400/1a012a/ffffff?text=Product'}" alt="${product.name}" class="w-full h-48 object-contain bg-transparent rounded-t-lg" onerror="this.onerror=null;this.src='https://placehold.co/600x400/1a012a/ffffff?text=Product';" style="image-rendering: -webkit-optimize-contrast; image-rendering: crisp-edges;">
                 <div class="p-4 text-right">
                     <h3 class="text-xl font-semibold text-white truncate">${product.name}</h3>
                     <p class="text-purple-300 text-sm mt-1">القسم: ${
@@ -614,7 +614,7 @@ const displayProducts = (products) => {
     document.querySelectorAll('.buy-now-card-btn').forEach(button => {
         button.addEventListener('click', async (e) => {
             e.stopPropagation();
-            
+
             if (!userId || !currentUserProfile) {
                 alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
                 return;
@@ -684,12 +684,12 @@ const openProductDetailModal = (product) => {
     const totalImages = document.getElementById('total-images');
     const productDetailAvailability = document.getElementById('product-detail-availability');
     const productDetailButtons = document.getElementById('product-detail-buttons');
-    
+
     if (!uiElements.productDetailName || !productDetailMainImage || !uiElements.productDetailDescription || !uiElements.productDetailPrice || !uiElements.productDetailCategory || !uiElements.addToCartDetailBtn || !uiElements.productDetailModal || !productDetailThumbnails) {
          console.error("One or more product detail modal elements not found.");
          return;
     }
-    
+
     uiElements.productDetailName.textContent = product.name;
     uiElements.productDetailDescription.textContent = product.description;
     uiElements.productDetailPrice.textContent = `${Math.round(product.price).toLocaleString('en-US')} د.ع`;
@@ -734,7 +734,7 @@ const openProductDetailModal = (product) => {
     productDetailMainImage.src = productImages[0];
     productDetailMainImage.alt = product.name;
     productDetailMainImage.style.objectFit = 'contain';
-    productDetailMainImage.style.backgroundColor = 'white';
+    productDetailMainImage.style.backgroundColor = 'transparent';
     productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
 
     // إنشاء الصور المصغرة
@@ -742,7 +742,7 @@ const openProductDetailModal = (product) => {
     productImages.forEach((imageUrl, index) => {
         const thumbnailHtml = `
             <div class="cursor-pointer border-2 border-transparent hover:border-purple-400 rounded-lg overflow-hidden transition duration-200 ${index === 0 ? 'border-purple-600' : ''}" data-image-index="${index}">
-                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-12 h-12 object-contain bg-white" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a012a/ffffff?text=${index + 1}';" style="image-rendering: -webkit-optimize-contrast;">
+                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-12 h-12 object-contain bg-transparent" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a012a/ffffff?text=${index + 1}';" style="image-rendering: -webkit-optimize-contrast;">
             </div>
         `;
         productDetailThumbnails.insertAdjacentHTML('beforeend', thumbnailHtml);
@@ -754,12 +754,12 @@ const openProductDetailModal = (product) => {
             const imageIndex = parseInt(e.currentTarget.dataset.imageIndex);
             productDetailMainImage.src = productImages[imageIndex];
             productDetailMainImage.style.objectFit = 'contain';
-            productDetailMainImage.style.backgroundColor = 'white';
+            productDetailMainImage.style.backgroundColor = 'transparent';
             productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
-            
+
             // تحديث عداد الصورة الحالية
             if (currentImageIndex) currentImageIndex.textContent = imageIndex + 1;
-            
+
             // تحديث الحد المميز للصورة المختارة
             productDetailThumbnails.querySelectorAll('[data-image-index]').forEach(thumb => {
                 thumb.classList.remove('border-purple-600');
@@ -783,7 +783,7 @@ const openProductDetailModal = (product) => {
     }
 
     uiElements.productDetailModal.classList.remove('hidden');
-    
+
     // إعادة تعيين scroll إلى الأعلى
     const modalContent = uiElements.productDetailModal.querySelector('.overflow-y-auto');
     if (modalContent) {
@@ -807,15 +807,15 @@ const populateCategoryDropdowns = () => {
         const categoryItem = document.createElement('div');
         categoryItem.classList.add('category-filter-btn', 'flex', 'items-center', 'justify-between', 'w-full', 'px-4', 'py-2', 'text-white', 'hover:bg-purple-700');
         categoryItem.dataset.categoryId = cat.id;
-        
+
         const categoryName = document.createElement('span');
         categoryName.textContent = cat.name;
         categoryName.classList.add('flex-1', 'text-right', 'cursor-pointer');
         categoryName.dataset.categoryId = cat.id;
-        
+
         const adminButtons = document.createElement('div');
         adminButtons.classList.add('flex', 'gap-1', 'ml-2');
-        
+
         if (isAdmin) {
             // زر التعديل
             const editBtn = document.createElement('button');
@@ -828,7 +828,7 @@ const populateCategoryDropdowns = () => {
             editBtn.dataset.categoryId = cat.id;
             editBtn.dataset.categoryName = cat.name;
             editBtn.title = 'تعديل التصنيف';
-            
+
             // زر الحذف
             const deleteBtn = document.createElement('button');
             deleteBtn.innerHTML = `
@@ -840,11 +840,11 @@ const populateCategoryDropdowns = () => {
             deleteBtn.dataset.categoryId = cat.id;
             deleteBtn.dataset.categoryName = cat.name;
             deleteBtn.title = 'حذف التصنيف';
-            
+
             adminButtons.appendChild(editBtn);
             adminButtons.appendChild(deleteBtn);
         }
-        
+
         categoryItem.appendChild(categoryName);
         categoryItem.appendChild(adminButtons);
         uiElements.categoriesDropdown.appendChild(categoryItem);
@@ -860,13 +860,31 @@ const populateCategoryDropdowns = () => {
         uiElements.editProductCategorySelect.appendChild(editProductOption);
     });
 
-    // إضافة أحداث النقر لأسماء التصنيفات
-    document.querySelectorAll('.category-filter-btn span').forEach(span => {
-        span.addEventListener('click', (e) => {
-            const categoryId = e.target.dataset.categoryId;
-            filterProductsByCategory(categoryId);
-            uiElements.categoriesDropdown.classList.add('hidden');
-        });
+    // إضافة أحداث النقر لأسماء التصنيفات وأزرار التصنيف
+    document.querySelectorAll('.category-filter-btn').forEach(filterBtn => {
+        // إضافة حدث النقر للعنصر الكامل أو النص بداخله
+        const clickHandler = (e) => {
+            e.stopPropagation();
+            
+            // البحث عن categoryId في العنصر نفسه أو في العنصر الفرعي
+            let categoryId = e.target.dataset.categoryId;
+            if (!categoryId && e.target.closest('.category-filter-btn')) {
+                categoryId = e.target.closest('.category-filter-btn').dataset.categoryId;
+            }
+            
+            if (categoryId) {
+                filterProductsByCategory(categoryId);
+                uiElements.categoriesDropdown.classList.add('hidden');
+            }
+        };
+        
+        filterBtn.addEventListener('click', clickHandler);
+        
+        // إضافة نفس المعالج للنص بداخل العنصر
+        const spanElement = filterBtn.querySelector('span');
+        if (spanElement) {
+            spanElement.addEventListener('click', clickHandler);
+        }
     });
 
     // إضافة أحداث النقر لأزرار التعديل والحذف
@@ -895,6 +913,21 @@ const filterProductsByCategory = (categoryId) => {
     const filtered = productsData.filter(product => {
         return categoryId === 'all' || product.category === categoryId;
     });
+    
+    // التحقق من اسم التصنيف وإضافة كلاس خاص للماوس بادات
+    const bodyElement = document.body;
+    
+    // إزالة جميع كلاسات التصنيفات السابقة
+    bodyElement.classList.remove('mousepads-category');
+    
+    // إضافة كلاس الماوس بادات فقط إذا كان التصنيف محدد وليس "الكل"
+    if (categoryId !== 'all') {
+        const category = categoriesData.find(cat => cat.id === categoryId);
+        if (category && category.name && category.name.includes('ماوس باد')) {
+            bodyElement.classList.add('mousepads-category');
+        }
+    }
+    
     displayProducts(filtered);
 };
 
@@ -940,18 +973,18 @@ const displayCart = () => {
     } else {
         // التحقق من وجود منتجات بدون توصيل مجاني
         let hasNonFreeDeliveryItems = false;
-        
+
         currentCart.forEach(item => {
             const itemTotal = item.price * item.quantity;
             total += itemTotal;
             itemCount += item.quantity;
-            
+
             // البحث عن المنتج في قاعدة البيانات للتحقق من التوصيل المجاني
             const productData = productsData.find(p => p.id === item.productId);
             if (productData && !productData.freeDelivery) {
                 hasNonFreeDeliveryItems = true;
             }
-            
+
             const formattedItemPrice = Math.round(item.price).toLocaleString('en-US');
             const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
 
@@ -1116,7 +1149,7 @@ const addDeveloper = async (newUID) => {
         const updatedUIDs = [...developerUIDs, trimmedUID];
         const developersDocRef = doc(db, `settings`, 'developers');
         await setDoc(developersDocRef, { uids: updatedUIDs });
-        
+
         developerUIDs = updatedUIDs;
         alertUserMessage("تم إضافة المطور بنجاح!", 'success');
         displayDevelopersList();
@@ -1144,7 +1177,7 @@ const removeDeveloper = async (uidToRemove) => {
         const updatedUIDs = developerUIDs.filter(uid => uid !== uidToRemove);
         const developersDocRef = doc(db, `settings`, 'developers');
         await setDoc(developersDocRef, { uids: updatedUIDs });
-        
+
         developerUIDs = updatedUIDs;
         alertUserMessage("تم حذف المطور بنجاح!", 'success');
         displayDevelopersList();
@@ -1159,7 +1192,7 @@ const displayDevelopersList = () => {
     if (!developersList) return;
 
     developersList.innerHTML = '';
-    
+
     developerUIDs.forEach(uid => {
         const isMainDeveloper = uid === MAIN_DEVELOPER_UID;
         const developerItem = `
@@ -1182,12 +1215,12 @@ const displayDevelopersList = () => {
 // Admin category functions
 const openEditCategoryModal = (categoryId, categoryName) => {
     if (!isAdmin) return;
-    
+
     // إنشاء مودال التعديل ديناميكياً أو استخدام مودال موجود
     const editCategoryNameInput = document.getElementById('edit-category-name');
     const editCategoryIdInput = document.getElementById('edit-category-id');
     const editCategoryModal = document.getElementById('edit-category-modal');
-    
+
     if (editCategoryNameInput && editCategoryIdInput && editCategoryModal) {
         editCategoryIdInput.value = categoryId;
         editCategoryNameInput.value = categoryName;
@@ -1238,7 +1271,7 @@ const deleteCategory = async (categoryId, categoryName) => {
             if (!forceDelete) {
                 return;
             }
-            
+
             // تحديث المنتجات لإزالة التصنيف المحذوف
             for (const product of productsUsingCategory) {
                 const productDocRef = doc(db, `products`, product.id);
@@ -1251,7 +1284,7 @@ const deleteCategory = async (categoryId, categoryName) => {
         const categoryDocRef = doc(db, `categories`, categoryId);
         await deleteDoc(categoryDocRef);
         alertUserMessage("تم حذف التصنيف بنجاح.", 'success');
-        
+
         // إخفاء القائمة المنبثقة
         if (uiElements.categoriesDropdown) {
             uiElements.categoriesDropdown.classList.add('hidden');
@@ -1446,11 +1479,11 @@ const populateCheckoutModalDirectPurchase = (product) => {
     uiElements.checkoutProductsList.innerHTML = '';
     const itemTotal = product.price;
     const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
-    
+
     // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
     const freeDeliveryBadge = product.freeDelivery ? 
         '<span class="text-xs bg-green-600 text-white px-1 py-0.5 rounded mr-2">توصيل مجاني</span>' : '';
-    
+
     const productItemHtml = `
         <div class="flex items-center justify-between mb-2">
             <div class="flex items-center">
@@ -1529,19 +1562,19 @@ const populateCheckoutModal = () => {
     currentCart.forEach(item => {
         const itemTotal = item.price * item.quantity;
         orderSubtotal += itemTotal;
-        
+
         // البحث عن المنتج في قاعدة البيانات للتحقق من التوصيل المجاني
         const productData = productsData.find(p => p.id === item.productId);
         if (productData && !productData.freeDelivery) {
             hasNonFreeDeliveryItems = true;
         }
-        
+
         const formattedItemTotal = Math.round(itemTotal).toLocaleString('en-US');
-        
+
         // عرض علامة التوصيل المجاني إذا كان المنتج يحتوي عليه
         const freeDeliveryBadge = (productData && productData.freeDelivery) ? 
             '<span class="text-xs bg-green-600 text-white px-1 py-0.5 rounded mr-2">توصيل مجاني</span>' : '';
-        
+
         const productItemHtml = `
             <div class="flex items-center justify-between mb-2">
                 <div class="flex items-center">
@@ -1669,24 +1702,24 @@ const setupEventListeners = () => {
             try {
                 // البحث عن مستخدم موجود بنفس المعلومات
                 const existingUser = await findExistingUser(fullName, fullPhoneNumber);
-                
+
                 if (existingUser) {
                     // المستخدم موجود، تسجيل دخول للحساب الموجود
                     console.log("Existing user found, switching to existing account:", existingUser.userId);
-                    
+
                     // تسجيل الخروج من الحساب المجهول الحالي إذا كان مختلفاً
                     if (userId && userId !== existingUser.userId) {
                         console.log("Signing out from current anonymous account to switch to existing account");
                         await signOut(auth);
                     }
-                    
+
                     // تعيين المستخدم الموجود
                     userId = existingUser.userId;
                     currentUserProfile = existingUser.data;
-                    
+
                     // محاكاة تسجيل الدخول للمستخدم الموجود
                     // هنا نحتاج لتسجيل الدخول بطريقة مختلفة أو إدارة الجلسة بشكل مخصص
-                    
+
                     // تحديث UI
                     if (uiElements.profileDetailsName) uiElements.profileDetailsName.textContent = existingUser.data.fullName || 'مستخدم';
                     if (uiElements.profileDetailsPhone) uiElements.profileDetailsPhone.textContent = existingUser.data.phoneNumber || 'N/A';
@@ -1699,7 +1732,7 @@ const setupEventListeners = () => {
 
                     // إعداد Real-time listeners للحساب الموجود
                     setupRealtimeListeners();
-                    
+
                     alertUserMessage(`مرحباً بعودتك ${existingUser.data.fullName}! تم تسجيل دخولك للحساب الموجود.`, 'success');
                 } else {
                     // مستخدم جديد، التحقق من وجود UID حالي أو إنشاء واحد جديد
@@ -1709,13 +1742,13 @@ const setupEventListeners = () => {
                         }
                         userId = auth.currentUser.uid;
                     }
-                    
+
                     console.log("Creating new user with UID:", userId);
 
                     // التحقق من عدم وجود ملف شخصي لهذا UID مسبقاً
                     const existingProfileRef = doc(db, `users/${userId}/userProfile`, userId);
                     const existingProfileSnap = await getDoc(existingProfileRef);
-                    
+
                     if (existingProfileSnap.exists()) {
                         // يوجد ملف شخصي مسبق، قم بتحديثه
                         await updateDoc(existingProfileRef, {
@@ -1733,7 +1766,7 @@ const setupEventListeners = () => {
                             profilePicUrl: 'https://placehold.co/100x100/eeeeee/333333?text=User',
                             createdAt: new Date().toISOString()
                         };
-                        
+
                         await setDoc(existingProfileRef, newUserData);
                         console.log("New user profile created in Firestore.");
                         alertUserMessage('تم إنشاء حساب جديد بنجاح!', 'success');
@@ -1876,10 +1909,10 @@ const setupEventListeners = () => {
                 alertUserMessage("سلة التسوق فارغة. الرجاء إضافة منتجات.", 'warning');
                 return;
             }
-            
+
             // حفظ بيانات السلة الحالية
             orderCartData = [...currentCart];
-            
+
             populateCheckoutModal();
             if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
         });
@@ -1914,7 +1947,7 @@ const setupEventListeners = () => {
             try {
                 // استخدام البيانات المحفوظة أو السلة الحالية
                 const cartToProcess = orderCartData.length > 0 ? orderCartData : currentCart;
-                
+
                 if (cartToProcess.length === 0) {
                     alertUserMessage('لا توجد منتجات في الطلب.', 'error');
                     return;
@@ -1948,17 +1981,17 @@ const setupEventListeners = () => {
                     // البحث عن المنتج للتحقق من التوصيل المجاني
                     const productData = productsData.find(p => p.id === item.productId);
                     const freeDeliveryText = (productData && productData.freeDelivery) ? ' (توصيل مجاني)' : '';
-                    
+
                     if (productData && !productData.freeDelivery) {
                         hasNonFreeDeliveryItems = true;
                     }
-                    
+
                     orderMessage += `${index + 1}. ${item.name} (${item.quantity}x)${freeDeliveryText} - ${Math.round(item.price).toLocaleString('en-US')} د.ع = ${Math.round(item.price * item.quantity).toLocaleString('en-US')} د.ع\n`;
                     cartTotalForBot += (item.price * item.quantity);
                 });
-                
+
                 orderMessage += `\nالمجموع الفرعي: ${Math.round(cartTotalForBot).toLocaleString('en-US')} د.ع\n`;
-                
+
                 const deliveryFee = hasNonFreeDeliveryItems ? 5000 : 0;
                 if (hasNonFreeDeliveryItems) {
                     orderMessage += `رسوم التوصيل: 5,000 د.ع\n`;
@@ -1990,10 +2023,10 @@ const setupEventListeners = () => {
                     alertUserMessage('تم تأكيد الطلب بنجاح! سيتم التواصل معك قريباً.', 'success');
                     if (uiElements.checkoutModal) uiElements.checkoutModal.classList.add('hidden');
                     if (uiElements.shoppingCartModal) uiElements.shoppingCartModal.classList.add('hidden');
-                    
+
                     // تنظيف البيانات المؤقتة
                     orderCartData = [];
-                    
+
                     // حذف السلة فقط إذا كان الطلب من السلة العادية وليس "شراء الآن"
                     if (cartToProcess === currentCart) {
                         const cartItemsRef = collection(db, `users/${userId}/cart`);
@@ -2143,12 +2176,12 @@ const setupEventListeners = () => {
             }
             const categoryId = uiElements.editCategoryIdInput.value;
             const newName = uiElements.editCategoryNameInput.value.trim();
-            
+
             if (!newName) {
                 alertUserMessage("الرجاء إدخال اسم التصنيف.", 'error');
                 return;
             }
-            
+
             await updateCategory(categoryId, newName);
             setTimeout(() => {
                 if (uiElements.editCategoryModal) uiElements.editCategoryModal.classList.add('hidden');
@@ -2338,6 +2371,11 @@ const setupEventListeners = () => {
     if (uiElements.bottomHomeBtn) {
         uiElements.bottomHomeBtn.addEventListener('click', () => {
             document.getElementById('top').scrollIntoView({ behavior: 'smooth' });
+            
+            // إزالة كلاس الماوس بادات عند العودة للصفحة الرئيسية
+            const bodyElement = document.body;
+            bodyElement.classList.remove('mousepads-category');
+            
             displayProducts(productsData); // Show all products
         });
     }
