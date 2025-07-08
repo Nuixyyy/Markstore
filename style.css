@@ -231,9 +231,9 @@ html {
 .product-card-hover img {
   object-fit: contain;
   background-color: white;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: crisp-edges;
-  image-rendering: pixelated;
+  image_rendering: -webkit-optimize-contrast;
+  image_rendering: crisp-edges;
+  image_rendering: pixelated;
 }
 
 /* قواعد حذف الخلفية البيضاء للمنتجات المحددة */
@@ -300,7 +300,7 @@ html {
     grid-template-columns: 1fr !important;
     gap: 1rem !important;
   }
-  
+
   .mousepads-category .product-card-hover img {
     height: 150px !important;
     background-color: transparent !important;
@@ -483,3 +483,8 @@ button:hover {
 
 <!-- Bottom Navigation -->
     <nav class="fixed bottom-0 left-0 right-0 shadow-lg z-[9999] mx-4 mb-4 rounded-2xl" style="background-color: #2d0445;">
+<!-- Header -->
+    <header style="background-color: #2d0445;" class="shadow-lg fixed top-0 left-0 right-0 z-50">
+        <div class="container mx-auto px-4 py-4">
+<!-- Main Content -->
+    <main class="container mx-auto px-4 py-8 pt-24">
