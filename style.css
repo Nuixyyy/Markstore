@@ -230,7 +230,7 @@ html {
 
 .product-card-hover img {
   object-fit: contain;
-  background-color: transparent;
+  background-color: white;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   image-rendering: pixelated;
@@ -248,17 +248,32 @@ html {
   min-height: auto !important;
 }
 
+/* إزالة الخلفية البيضاء من صور الماوس بادات فقط */
 .mousepads-category .product-card-hover img {
   height: 200px !important;
   background-color: transparent !important;
   background: transparent !important;
+  background-image: none !important;
   backdrop-filter: none !important;
+  mix-blend-mode: multiply;
+  filter: brightness(1.1) contrast(1.1);
 }
 
-/* إزالة أي خلفية بيضاء من صور الماوس بادات */
+/* إزالة أي عناصر زائفة قد تسبب خلفية بيضاء */
 .mousepads-category .product-card-hover img::before,
 .mousepads-category .product-card-hover img::after {
   display: none !important;
+  content: none !important;
+}
+
+/* تطبيق شفافية كاملة على الحاوي للماوس بادات */
+.mousepads-category .product-card-hover {
+  background: transparent !important;
+}
+
+/* إزالة أي خلفية من البطاقة نفسها في قسم الماوس بادات */
+.mousepads-category .product-card-hover .bg-purple-800 {
+  background: linear-gradient(135deg, rgba(26, 1, 42, 0.95), rgba(45, 4, 69, 0.95)) !important;
 }
 
 @media (max-width: 640px) {
@@ -271,6 +286,9 @@ html {
     height: 150px !important;
     background-color: transparent !important;
     background: transparent !important;
+    background-image: none !important;
+    mix-blend-mode: multiply;
+    filter: brightness(1.1) contrast(1.1);
   }
 }
 
