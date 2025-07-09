@@ -43,6 +43,7 @@ let categoriesData = [];
 let reviewsData = [];
 let currentCart = [];
 let orderCartData = [];
+let pendingDirectPurchase = null; // لحفظ بيانات المنتج في حالة الشراء المباشر
 
 let firebaseReadyPromise;
 let resolveFirebaseReady;
@@ -590,34 +591,53 @@ const displayProducts = (products) => {
         button.addEventListener('click', async (e) => {
             e.stopPropagation();
 
-            if (!userId || !currentUserProfile) {
-                alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
-                return;
-            }
-
             const productId = e.target.dataset.productId;
             const productToBuy = productsData.find(p => p.id === productId);
 
-            if (productToBuy) {
-                // Create temporary cart with single product
-                const tempCart = [{
+            if (!productToBuy) {
+                alertUserMessage("المنتج غير موجود.", 'error');
+                return;
+            }
+
+            if (!userId || !currentUserProfile) {
+                // حفظ بيانات المنتج للشراء المباشر
+                pendingDirectPurchase = {
                     id: productToBuy.id,
                     productId: productToBuy.id,
                     name: productToBuy.name,
                     price: productToBuy.price,
-                    imageUrl: productToBuy.imageUrl,
-                    quantity: 1
-                }];
+                    imageUrl: (productToBuy.imageUrls && productToBuy.imageUrls.length > 0) ? productToBuy.imageUrls[0] : productToBuy.imageUrl,
+                    quantity: 1,
+                    fullProductData: productToBuy
+                };
 
-                // حفظ بيانات الطلب المؤقتة
-                orderCartData = [...tempCart];
-
-                // Populate checkout modal with single product
-                populateCheckoutModalDirectPurchase(productToBuy);
-
-                // Open checkout modal
-                if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
+                alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
+                
+                // فتح نافذة تسجيل الدخول
+                if (uiElements.loginModal) {
+                    uiElements.loginModal.classList.remove('hidden');
+                }
+                return;
             }
+
+            // Create temporary cart with single product
+            const tempCart = [{
+                id: productToBuy.id,
+                productId: productToBuy.id,
+                name: productToBuy.name,
+                price: productToBuy.price,
+                imageUrl: (productToBuy.imageUrls && productToBuy.imageUrls.length > 0) ? productToBuy.imageUrls[0] : productToBuy.imageUrl,
+                quantity: 1
+            }];
+
+            // حفظ بيانات الطلب المؤقتة
+            orderCartData = [...tempCart];
+
+            // Populate checkout modal with single product
+            populateCheckoutModalDirectPurchase(productToBuy);
+
+            // Open checkout modal
+            if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
         });
     });
 
@@ -1801,6 +1821,11 @@ const setupEventListeners = () => {
                 setTimeout(() => {
                     if (uiElements.loginModal) uiElements.loginModal.classList.add('hidden');
                     if (uiElements.loginMessage) uiElements.loginMessage.textContent = '';
+
+                    // التحقق من وجود عملية شراء مباشر معلقة
+                    if (pendingDirectPurchase) {
+                        processPendingDirectPurchase();
+                    }
                 }, 1500);
 
             } catch (error) {
@@ -1814,6 +1839,10 @@ const setupEventListeners = () => {
     if (uiElements.profileDetailsLogoutBtn) {
         uiElements.profileDetailsLogoutBtn.addEventListener('click', async () => {
             try {
+                // تنظيف البيانات المعلقة
+                pendingDirectPurchase = null;
+                orderCartData = [];
+                
                 await signOut(auth);
                 console.log("User signed out.");
                 // تغيير أيقونة البروفايل إلى كلمة "حسابي" بعد تسجيل الخروج
@@ -1857,38 +1886,61 @@ const setupEventListeners = () => {
     // Product detail modal buy now
     if (uiElements.buyNowDetailBtn) {
         uiElements.buyNowDetailBtn.addEventListener('click', async () => {
-            if (!userId || !currentUserProfile) {
-                alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
-                return;
-            }
-
             const productId = uiElements.buyNowDetailBtn.dataset.productId;
             const productToBuy = productsData.find(p => p.id === productId);
 
-            if (productToBuy) {
+            if (!productToBuy) {
+                alertUserMessage("المنتج غير موجود.", 'error');
+                return;
+            }
+
+            if (!userId || !currentUserProfile) {
                 // استخدام الصورة الرئيسية (الأولى) من مجموعة الصور
                 const mainImageUrl = (productToBuy.imageUrls && productToBuy.imageUrls.length > 0) ? productToBuy.imageUrls[0] : productToBuy.imageUrl;
 
-                // Create temporary cart with single product
-                const tempCart = [{
+                // حفظ بيانات المنتج للشراء المباشر
+                pendingDirectPurchase = {
                     id: productToBuy.id,
                     productId: productToBuy.id,
                     name: productToBuy.name,
                     price: productToBuy.price,
                     imageUrl: mainImageUrl,
-                    quantity: 1
-                }];
+                    quantity: 1,
+                    fullProductData: productToBuy
+                };
 
-                // حفظ بيانات الطلب المؤقتة
-                orderCartData = [...tempCart];
-
-                // Populate checkout modal with single product
-                populateCheckoutModalDirectPurchase(productToBuy);
-
-                // Close product detail modal and open checkout
+                alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
+                
+                // إغلاق مودال تفاصيل المنتج وفتح نافذة تسجيل الدخول
                 if (uiElements.productDetailModal) uiElements.productDetailModal.classList.add('hidden');
-                if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
+                if (uiElements.loginModal) {
+                    uiElements.loginModal.classList.remove('hidden');
+                }
+                return;
             }
+
+            // استخدام الصورة الرئيسية (الأولى) من مجموعة الصور
+            const mainImageUrl = (productToBuy.imageUrls && productToBuy.imageUrls.length > 0) ? productToBuy.imageUrls[0] : productToBuy.imageUrl;
+
+            // Create temporary cart with single product
+            const tempCart = [{
+                id: productToBuy.id,
+                productId: productToBuy.id,
+                name: productToBuy.name,
+                price: productToBuy.price,
+                imageUrl: mainImageUrl,
+                quantity: 1
+            }];
+
+            // حفظ بيانات الطلب المؤقتة
+            orderCartData = [...tempCart];
+
+            // Populate checkout modal with single product
+            populateCheckoutModalDirectPurchase(productToBuy);
+
+            // Close product detail modal and open checkout
+            if (uiElements.productDetailModal) uiElements.productDetailModal.classList.add('hidden');
+            if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
         });
     }
 
@@ -2373,6 +2425,37 @@ const setupEventListeners = () => {
             
             displayProducts(productsData); // Show all products
         });
+    }
+};
+
+// دالة معالجة الشراء المباشر المعلق بعد تسجيل الدخول
+const processPendingDirectPurchase = () => {
+    if (!pendingDirectPurchase || !userId || !currentUserProfile) {
+        pendingDirectPurchase = null;
+        return;
+    }
+
+    try {
+        // حفظ بيانات الطلب المؤقتة
+        orderCartData = [pendingDirectPurchase];
+
+        // تعبئة مودال الدفع بالمنتج المحدد
+        populateCheckoutModalDirectPurchase(pendingDirectPurchase.fullProductData);
+
+        // فتح مودال الدفع
+        if (uiElements.checkoutModal) {
+            uiElements.checkoutModal.classList.remove('hidden');
+        }
+
+        // عرض رسالة للمستخدم
+        alertUserMessage(`تم تسجيل دخولك بنجاح! يمكنك الآن إكمال شراء "${pendingDirectPurchase.name}".`, 'success');
+
+        // تنظيف البيانات المؤقتة
+        pendingDirectPurchase = null;
+    } catch (error) {
+        console.error("Error processing pending direct purchase:", error);
+        alertUserMessage("حدث خطأ أثناء معالجة طلب الشراء. يرجى المحاولة مرة أخرى.", 'error');
+        pendingDirectPurchase = null;
     }
 };
 
