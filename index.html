@@ -17,7 +17,8 @@
     <link rel="stylesheet" href="style.css">
     <style>
         body {
-            background-color: #1a012a;
+            background-color: #ffffff;
+            color: #333333;
         }
     </style>
 </head>
@@ -122,6 +123,19 @@
                     </svg>
                 </div>
             </div>
+            
+            <!-- Featured Products Section - Moved here under search -->
+            <section class="featured-products-section mb-8">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h2 class="text-2xl font-bold text-gray-800">المنتجات المميزة</h2>
+                        <button id="manage-featured-btn" class="manage-featured-btn hidden">إدارة المنتجات المميزة</button>
+                    </div>
+                    <div id="featured-products-container" class="featured-products-container">
+                        <p class="text-center text-gray-500 w-full">لا توجد منتجات مميزة حالياً</p>
+                    </div>
+                </div>
+            </section>
             <div id="products-container" class="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
                 <p class="col-span-full text-center text-purple-300">جارٍ تحميل المنتجات...</p>
             </div>
@@ -658,6 +672,43 @@
                 <button type="submit" class="w-full bg-blue-600 text-white py-2 rounded-lg hover:bg-blue-700 transition duration-300">إضافة التقييم</button>
                 <div id="add-review-message" class="mt-4 text-center"></div>
             </form>
+        </div>
+    </div>
+
+    <!-- Manage Featured Products Modal -->
+    <div id="manage-featured-modal" class="modal-overlay fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+        <div class="rounded-lg p-6 w-full max-w-4xl mx-4 max-h-96 overflow-y-auto" style="background-color: #1a012a;">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-white">إدارة المنتجات المميزة</h3>
+                <button class="modal-close-btn text-white hover:text-purple-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Current Featured Products -->
+            <div class="mb-6">
+                <h4 class="text-lg font-semibold text-white mb-3">المنتجات المميزة الحالية</h4>
+                <div id="current-featured-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <!-- Available Products to Add -->
+            <div>
+                <h4 class="text-lg font-semibold text-white mb-3">المنتجات المتاحة للإضافة</h4>
+                <div class="mb-4">
+                    <input type="text" id="featured-search-input" placeholder="البحث في المنتجات..." class="w-full px-3 py-2 rounded-lg focus:outline-none font-medium" style="background-color: rgba(255, 255, 255, 0.95); border: 2px solid #6b46c1; color: #1a012a;">
+                </div>
+                <div id="available-products-list" class="grid grid-cols-2 md:grid-cols-3 gap-4 max-h-64 overflow-y-auto">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end">
+                <button id="save-featured-btn" class="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 transition duration-300">حفظ التغييرات</button>
+            </div>
         </div>
     </div>
 
