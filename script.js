@@ -1,5 +1,5 @@
 // Import Firebase SDKs
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { initializeApp as initializeFirebaseApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInAnonymously, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, doc, getDoc, setDoc, addDoc, collection, query, onSnapshot, deleteDoc, updateDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
@@ -43,6 +43,8 @@ let categoriesData = [];
 let reviewsData = [];
 let currentCart = [];
 let orderCartData = [];
+let featuredProductsData = [];
+let selectedFeaturedProducts = [];
 
 let firebaseReadyPromise;
 let resolveFirebaseReady;
@@ -146,7 +148,7 @@ const initializeFirebase = async () => {
             return;
         }
 
-        app = initializeApp(MY_FIREBASE_CONFIG);
+        app = initializeFirebaseApp(MY_FIREBASE_CONFIG);
 
         if (!app) {
             console.error("Firebase app object is undefined after initialization. Check config or Firebase SDK loading.");
@@ -281,6 +283,28 @@ const setupRealtimeListeners = () => {
             }
         }
     });
+
+    // Featured products listener
+    const featuredColRef = collection(db, `featuredProducts`);
+    onSnapshot(featuredColRef, (snapshot) => {
+        featuredProductsData = [];
+        snapshot.forEach((doc) => {
+            featuredProductsData.push({ id: doc.id, ...doc.data() });
+        });
+        console.log("Featured products data fetched:", featuredProductsData.length);
+        displayFeaturedProducts();
+    }, (error) => {
+        console.error("Error fetching featured products:", error);
+        if (error.code === 'permission-denied') {
+            console.warn("Permission denied for featured products. Make sure Firebase rules allow read access for all users.");
+            featuredProductsData = [];
+            displayFeaturedProducts();
+        } else {
+            console.error("Other error with featured products:", error);
+            featuredProductsData = [];
+            displayFeaturedProducts();
+        }
+    });
 };
 
 // User profile and admin functions
@@ -343,6 +367,13 @@ const fetchAdminStatus = async () => {
             isAdmin = true;
             if (uiElements.developerButtons) uiElements.developerButtons.classList.remove('hidden');
             if (uiElements.developerStatus) uiElements.developerStatus.classList.remove('hidden');
+
+            // إظهار زر إدارة المنتجات المميزة
+            const manageFeaturedBtn = document.getElementById('manage-featured-btn');
+            if (manageFeaturedBtn) {
+                manageFeaturedBtn.classList.remove('hidden');
+            }
+
             console.log("Current user is admin/developer.");
 
             // إظهار زر إدارة المطورين فقط للمطور الرئيسي
@@ -363,6 +394,13 @@ const fetchAdminStatus = async () => {
             isAdmin = false;
             if (uiElements.developerButtons) uiElements.developerButtons.classList.add('hidden');
             if (uiElements.developerStatus) uiElements.developerStatus.classList.add('hidden');
+
+            // إخفاء زر إدارة المنتجات المميزة
+            const manageFeaturedBtn = document.getElementById('manage-featured-btn');
+            if (manageFeaturedBtn) {
+                manageFeaturedBtn.classList.add('hidden');
+            }
+
             console.log("Current user is not admin/developer.");
         }
     }
@@ -371,11 +409,207 @@ const fetchAdminStatus = async () => {
     }
 };
 
+// Featured products functions
+const displayFeaturedProducts = () => {
+    const featuredContainer = document.getElementById('featured-products-container');
+    if (!featuredContainer) return;
+
+    featuredContainer.innerHTML = '';
+
+    if (featuredProductsData.length === 0) {
+        featuredContainer.innerHTML = '<p class="text-center text-gray-500 w-full">لا توجد منتجات مميزة حالياً</p>';
+        return;
+    }
+
+    featuredProductsData.forEach(featuredItem => {
+        const product = productsData.find(p => p.id === featuredItem.productId);
+        if (!product) return;
+
+        const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
+        const formattedPrice = Math.round(product.price).toLocaleString('en-US');
+
+        const featuredCard = `
+            <div class="featured-product-card" data-product-id="${product.id}">
+                <img src="${mainImageUrl || 'https://placehold.co/200x120/f8fafc/666666?text=Product'}" alt="${product.name}" onerror="this.onerror=null;this.src='https://placehold.co/200x120/f8fafc/666666?text=Product';">
+                <h3>${product.name}</h3>
+                <p>${formattedPrice} د.ع</p>
+            </div>
+        `;
+        featuredContainer.insertAdjacentHTML('beforeend', featuredCard);
+    });
+
+    // Add click events to featured product cards
+    document.querySelectorAll('.featured-product-card').forEach(card => {
+        card.addEventListener('click', (e) => {
+            const productId = e.currentTarget.dataset.productId;
+            const product = productsData.find(p => p.id === productId);
+            if (product) {
+                openProductDetailPage(product);
+            }
+        });
+    });
+};
+
+const openManageFeaturedModal = () => {
+    if (!isAdmin) return;
+
+    const modal = document.getElementById('manage-featured-modal');
+    if (!modal) return;
+
+    // Reset selected products
+    selectedFeaturedProducts = [...featuredProductsData.map(f => f.productId)];
+
+    displayCurrentFeaturedProducts();
+    displayAvailableProducts();
+
+    modal.classList.remove('hidden');
+};
+
+const displayCurrentFeaturedProducts = () => {
+    const container = document.getElementById('current-featured-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (selectedFeaturedProducts.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-center text-gray-300">لا توجد منتجات مميزة</p>';
+        return;
+    }
+
+    selectedFeaturedProducts.forEach(productId => {
+        const product = productsData.find(p => p.id === productId);
+        if (!product) return;
+
+        const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
+
+        const productCard = `
+            <div class="bg-purple-700 p-3 rounded-lg relative">
+                <button class="absolute top-1 right-1 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center text-xs hover:bg-red-700" onclick="removeFeaturedProduct('${productId}')">×</button>
+                <img src="${mainImageUrl}" alt="${product.name}" class="w-full h-20 object-contain bg-white rounded mb-2">
+                <h4 class="text-white text-sm font-medium truncate">${product.name}</h4>
+                <p class="text-green-300 text-xs">${Math.round(product.price).toLocaleString('en-US')} د.ع</p>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', productCard);
+    });
+};
+
+const displayAvailableProducts = (searchTerm = '') => {
+    const container = document.getElementById('available-products-list');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    // Filter available products (exclude already featured ones and sold products)
+    let availableProducts = productsData.filter(product => 
+        !selectedFeaturedProducts.includes(product.id) && 
+        product.availability !== 'sold' &&
+        (searchTerm === '' || product.name.toLowerCase().includes(searchTerm.toLowerCase()))
+    );
+
+    if (availableProducts.length === 0) {
+        container.innerHTML = '<p class="col-span-full text-center text-gray-300">لا توجد منتجات متاحة</p>';
+        return;
+    }
+
+    availableProducts.forEach(product => {
+        const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
+
+        const productCard = `
+            <div class="bg-purple-700 p-3 rounded-lg cursor-pointer hover:bg-purple-600 transition-colors" onclick="addFeaturedProduct('${product.id}')">
+                <img src="${mainImageUrl}" alt="${product.name}" class="w-full h-20 object-contain bg-white rounded mb-2">
+                <h4 class="text-white text-sm font-medium truncate">${product.name}</h4>
+                <p class="text-green-300 text-xs">${Math.round(product.price).toLocaleString('en-US')} د.ع</p>
+            </div>
+        `;
+        container.insertAdjacentHTML('beforeend', productCard);
+    });
+};
+
+window.addFeaturedProduct = (productId) => {
+    if (!selectedFeaturedProducts.includes(productId)) {
+        selectedFeaturedProducts.push(productId);
+        displayCurrentFeaturedProducts();
+        displayAvailableProducts(document.getElementById('featured-search-input')?.value || '');
+    }
+};
+
+window.removeFeaturedProduct = (productId) => {
+    selectedFeaturedProducts = selectedFeaturedProducts.filter(id => id !== productId);
+    displayCurrentFeaturedProducts();
+    displayAvailableProducts(document.getElementById('featured-search-input')?.value || '');
+};
+
+const saveFeaturedProducts = async () => {
+    if (!isAdmin) {
+        alertUserMessage("ليس لديك صلاحية لإدارة المنتجات المميزة.", 'error');
+        return;
+    }
+
+    try {
+        console.log("Saving featured products:", selectedFeaturedProducts);
+        
+        // Delete all existing featured products first
+        const featuredColRef = collection(db, 'featuredProducts');
+        const existingSnapshot = await getDocs(featuredColRef);
+        
+        console.log("Existing featured products to delete:", existingSnapshot.docs.length);
+        
+        // Delete existing documents one by one with error handling
+        for (const docToDelete of existingSnapshot.docs) {
+            try {
+                await deleteDoc(docToDelete.ref);
+                console.log("Deleted featured product:", docToDelete.id);
+            } catch (deleteError) {
+                console.error("Error deleting featured product:", docToDelete.id, deleteError);
+            }
+        }
+
+        // Add new featured products one by one with error handling
+        let successCount = 0;
+        for (const productId of selectedFeaturedProducts) {
+            try {
+                const docRef = await addDoc(featuredColRef, {
+                    productId: productId,
+                    createdAt: new Date().toISOString(),
+                    addedBy: userId
+                });
+                console.log("Added featured product:", productId, "with ID:", docRef.id);
+                successCount++;
+            } catch (addError) {
+                console.error("Error adding featured product:", productId, addError);
+            }
+        }
+
+        if (successCount > 0) {
+            alertUserMessage(`تم حفظ ${successCount} منتج مميز بنجاح!`, 'success');
+        } else if (selectedFeaturedProducts.length === 0) {
+            alertUserMessage('تم إزالة جميع المنتجات المميزة بنجاح!', 'success');
+        } else {
+            alertUserMessage('فشل في حفظ المنتجات المميزة. تحقق من الأذونات.', 'error');
+        }
+
+        // إضافة تأخير قبل إغلاق المودال لضمان حفظ البيانات
+        setTimeout(() => {
+            const modal = document.getElementById('manage-featured-modal');
+            if (modal) modal.classList.add('hidden');
+        }, 1000);
+
+    } catch (error) {
+        console.error("Error saving featured products:", error);
+        if (error.code === 'permission-denied') {
+            alertUserMessage("خطأ في الأذونات: تأكد من أن قواعد Firebase تسمح للمطورين بإدارة المنتجات المميزة.", 'error');
+        } else {
+            alertUserMessage(`فشل حفظ المنتجات المميزة: ${error.message}`, 'error');
+        }
+    }
+};
+
 // دالة البحث عن مستخدم موجود بنفس المعلومات (محسنة لتجنب مشاكل الأذونات)
 const findExistingUser = async (fullName, phoneNumber) => {
     try {
         console.log("Searching for existing user with:", { fullName, phoneNumber });
-        
+
         // بما أن Firebase لا يسمح بالوصول لجميع المستخدمين، سنتجاهل هذه الميزة مؤقتاً
         // وننشئ مستخدم جديد دائماً للتجنب مشاكل الأذونات
         console.log("Skipping user search due to permission restrictions");
@@ -510,7 +744,14 @@ const displayProducts = (products) => {
         uiElements.productsContainer.innerHTML = '<p class="col-span-full text-center text-purple-300">لا توجد منتجات لعرضها حاليًا.</p>';
         return;
     }
-    products.forEach(product => {
+
+    // ترتيب المنتجات حسب تاريخ الإنشاء مع عرض الأحدث أولاً
+    const sortedProducts = [...products].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA; // ترتيب تنازلي (الأحدث أولاً)
+    });
+    sortedProducts.forEach(product => {
         const formattedPrice = Math.round(product.price).toLocaleString('en-US');
         // استخدام الصورة الأولى من مجموعة الصور أو الصورة القديمة كـ fallback
         const mainImageUrl = (product.imageUrls && product.imageUrls.length > 0) ? product.imageUrls[0] : product.imageUrl;
@@ -626,7 +867,7 @@ const displayProducts = (products) => {
             const productId = e.currentTarget.id.replace('product-', '');
             const product = productsData.find(p => p.id === productId);
             if (product) {
-                openProductDetailModal(product);
+                openProductDetailPage(product);
             }
         });
     });
@@ -652,46 +893,22 @@ const displayProducts = (products) => {
     }
 };
 
-const openProductDetailModal = (product) => {
-    const productDetailMainImage = document.getElementById('product-detail-main-image');
-    const productDetailThumbnails = document.getElementById('product-detail-thumbnails');
-    const currentImageIndex = document.getElementById('current-image-index');
-    const totalImages = document.getElementById('total-images');
-    const productDetailAvailability = document.getElementById('product-detail-availability');
-    const productDetailButtons = document.getElementById('product-detail-buttons');
+// متغير لتتبع تاريخ المنتجات المزارة
+let productHistory = [];
 
-    if (!uiElements.productDetailName || !productDetailMainImage || !uiElements.productDetailDescription || !uiElements.productDetailPrice || !uiElements.productDetailCategory || !uiElements.addToCartDetailBtn || !uiElements.productDetailModal || !productDetailThumbnails) {
-         console.error("One or more product detail modal elements not found.");
-         return;
-    }
+const openProductDetailPage = (product) => {
+    // إضافة المنتج الحالي لتاريخ التصفح
+    productHistory.push(product);
 
-    uiElements.productDetailName.textContent = product.name;
-    uiElements.productDetailDescription.textContent = product.description;
-    uiElements.productDetailPrice.textContent = `${Math.round(product.price).toLocaleString('en-US')} د.ع`;
-    uiElements.productDetailCategory.textContent = `القسم: ${categoriesData.find(cat => cat.id === product.category)?.name || 'غير مصنف'}`;
+    // إخفاء المحتوى الرئيسي
+    const mainContent = document.querySelector('main');
+    const header = document.querySelector('header');
+    const bottomNav = document.querySelector('nav');
 
-    // عرض حالة التوفر - فقط إذا تم تحديدها وليست فارغة أو غير محدد
-    if (productDetailAvailability) {
-        if (product.availability === 'available') {
-            productDetailAvailability.innerHTML = '<span class="text-green-400 font-semibold">متوفر</span>';
-        } else if (product.availability === 'sold') {
-            productDetailAvailability.innerHTML = '<span class="text-red-400 font-semibold">مباع</span>';
-        } else {
-            // إذا لم يتم تحديد availability أو كانت فارغة، لا نعرض شيء
-            productDetailAvailability.innerHTML = '';
-        }
-    }
+    if (mainContent) mainContent.style.display = 'none';
+    if (bottomNav) bottomNav.style.display = 'none';
 
-    // إخفاء/إظهار الأزرار حسب حالة المنتج
-    if (productDetailButtons) {
-        if (product.availability === 'sold') {
-            productDetailButtons.style.display = 'none';
-        } else {
-            productDetailButtons.style.display = 'block';
-        }
-    }
-
-    // تحديد الصور المتاحة (إما الصور الجديدة أو الصورة القديمة)
+    // تحديد الصور المتاحة
     let productImages = [];
     if (product.imageUrls && product.imageUrls.length > 0) {
         productImages = product.imageUrls;
@@ -701,76 +918,247 @@ const openProductDetailModal = (product) => {
         productImages = ['https://placehold.co/600x400/1a012a/ffffff?text=لا توجد صورة'];
     }
 
-    // تحديث عداد الصور
-    if (currentImageIndex) currentImageIndex.textContent = '1';
-    if (totalImages) totalImages.textContent = productImages.length;
+    // عرض حالة التوفر والتوصيل المجاني
+    let statusInfo = '';
+    if (product.availability === 'available') {
+        statusInfo += '<span class="text-green-600 font-semibold bg-green-100 px-2 py-1 rounded-full text-sm">متوفر</span>';
+    } else if (product.availability === 'sold') {
+        statusInfo += '<span class="text-red-600 font-semibold bg-red-100 px-2 py-1 rounded-full text-sm">مباع</span>';
+    }
+    if (product.freeDelivery) {
+        statusInfo += ' <span class="text-green-600 font-semibold bg-green-100 px-2 py-1 rounded-full text-sm mr-2">توصيل مجاني</span>';
+    }
 
-    // عرض الصورة الرئيسية (الأولى)
-    productDetailMainImage.src = productImages[0];
-    productDetailMainImage.alt = product.name;
-    productDetailMainImage.style.objectFit = 'contain';
-    productDetailMainImage.style.backgroundColor = 'transparent';
-    productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
-
-    // إنشاء الصور المصغرة
-    productDetailThumbnails.innerHTML = '';
-    productImages.forEach((imageUrl, index) => {
-        const thumbnailHtml = `
-            <div class="cursor-pointer border-2 border-transparent hover:border-purple-400 rounded-lg overflow-hidden transition duration-200 ${index === 0 ? 'border-purple-600' : ''}" data-image-index="${index}">
-                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-12 h-12 object-contain bg-transparent" onerror="this.onerror=null;this.src='https://placehold.co/100x100/1a012a/ffffff?text=${index + 1}';" style="image-rendering: -webkit-optimize-contrast;">
+    // إنشاء أزرار العمليات
+    let buttonsSection = '';
+    if (product.availability !== 'sold') {
+        buttonsSection = `
+            <div class="space-y-3 mb-6">
+                <button id="product-page-add-to-cart" class="w-full bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition duration-300 shadow-lg flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13h10M17 21a2 2 0 100-4 2 2 0 000 4zM9 21a2 2 0 100-4 2 2 0 000 4z"></path>
+                    </svg>
+                    أضف إلى السلة
+                </button>
+                <button id="product-page-buy-now" class="w-full bg-orange-600 text-white py-4 rounded-lg font-semibold hover:bg-orange-700 transition duration-300 shadow-lg flex items-center justify-center gap-2">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                    </svg>
+                    شراء الآن
+                </button>
             </div>
         `;
-        productDetailThumbnails.insertAdjacentHTML('beforeend', thumbnailHtml);
+    }
+
+    // إنشاء الصور المصغرة
+    let thumbnailsHtml = '';
+    productImages.forEach((imageUrl, index) => {
+        thumbnailsHtml += `
+            <div class="cursor-pointer border-2 ${index === 0 ? 'border-blue-500' : 'border-gray-300'} hover:border-blue-400 rounded-lg overflow-hidden transition duration-200 w-16 h-16" onclick="changeMainImage('${imageUrl}', ${index})">
+                <img src="${imageUrl}" alt="${product.name} ${index + 1}" class="w-full h-full object-contain bg-white" onerror="this.onerror=null;this.src='https://placehold.co/60x60/1a012a/ffffff?text=${index + 1}';">
+            </div>
+        `;
     });
 
-    // إضافة أحداث النقر للصور المصغرة
-    productDetailThumbnails.querySelectorAll('[data-image-index]').forEach(thumbnail => {
-        thumbnail.addEventListener('click', (e) => {
-            const imageIndex = parseInt(e.currentTarget.dataset.imageIndex);
-            productDetailMainImage.src = productImages[imageIndex];
-            productDetailMainImage.style.objectFit = 'contain';
-            productDetailMainImage.style.backgroundColor = 'transparent';
-            productDetailMainImage.style.imageRendering = '-webkit-optimize-contrast';
+    // البحث عن منتجات ذات صلة (استبعاد المنتجات المباعة)
+    const relatedProducts = productsData.filter(p => 
+        p.id !== product.id && 
+        p.availability !== 'sold' &&
+        (p.category === product.category || p.name.toLowerCase().includes(product.name.toLowerCase().split(' ')[0]))
+    ).slice(0, 4);
 
-            // تحديث عداد الصورة الحالية
-            if (currentImageIndex) currentImageIndex.textContent = imageIndex + 1;
+    let relatedProductsHtml = '';
+    if (relatedProducts.length > 0) {
+        relatedProductsHtml = `
+            <div class="bg-white p-6 rounded-lg shadow-lg">
+                <h3 class="text-xl font-semibold text-gray-800 mb-4">منتجات ذات صلة</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    ${relatedProducts.map(relProduct => `
+                        <div class="border rounded-lg p-3 cursor-pointer hover:shadow-md transition duration-300" onclick="openRelatedProduct('${relProduct.id}')">
+                            <img src="${(relProduct.imageUrls && relProduct.imageUrls[0]) || relProduct.imageUrl}" alt="${relProduct.name}" class="w-full h-20 object-contain mb-2 bg-gray-50 rounded">
+                            <h4 class="text-sm font-medium text-gray-800 truncate">${relProduct.name}</h4>
+                            <p class="text-sm font-bold text-green-600">${Math.round(relProduct.price).toLocaleString('en-US')} د.ع</p>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
 
-            // تحديث الحد المميز للصورة المختارة
-            productDetailThumbnails.querySelectorAll('[data-image-index]').forEach(thumb => {
-                thumb.classList.remove('border-purple-600');
-                thumb.classList.add('border-transparent');
-            });
-            e.currentTarget.classList.remove('border-transparent');
-            e.currentTarget.classList.add('border-purple-600');
+    // إنشاء صفحة تفاصيل المنتج
+    const productPageHtml = `
+        <div id="product-detail-page" class="min-h-screen" style="background-color: #ffffff; color: #333333;">
+            <!-- Header with back button - Fixed and Responsive -->
+            <div class="bg-gradient-to-r from-blue-600 to-blue-800 p-4 md:p-6 shadow-2xl fixed top-0 left-0 right-0 z-[9999]">
+                <div class="flex items-center justify-between max-w-7xl mx-auto">
+                    <button id="back-to-previous" class="bg-white text-blue-600 px-4 py-3 md:px-8 md:py-4 rounded-xl hover:bg-blue-50 hover:shadow-xl transition duration-300 flex items-center gap-2 md:gap-3 font-bold shadow-xl text-lg md:text-xl border-2 md:border-3 border-blue-300 transform hover:scale-105 active:scale-95">
+                        <svg class="w-6 h-6 md:w-8 md:h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="3">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path>
+                        </svg>
+                        <span class="text-blue-700 text-sm md:text-base">رجوع</span>
+                    </button>
+                    <h1 class="text-lg md:text-2xl font-bold text-white text-center flex-1 mx-4">تفاصيل المنتج</h1>
+                    <div class="w-16 md:w-32"></div>
+                </div>
+            </div>
+
+            <!-- Content with padding for fixed header -->
+            <div class="pt-24 md:pt-32 pb-8">
+                <div class="container mx-auto px-4 max-w-7xl">
+                    <!-- Main Product Image -->
+                    <div class="mb-4">
+                        <div class="relative bg-white rounded-lg shadow-lg p-4">
+                            <img id="main-product-image" src="${productImages[0]}" alt="${product.name}" class="w-full h-80 object-contain rounded-lg">
+                            <div class="absolute top-2 right-2 bg-blue-600 text-white px-2 py-1 rounded-lg text-xs">
+                                <span id="current-img-index">1</span> / <span>${productImages.length}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Thumbnails -->
+                    <div class="flex justify-center gap-2 mb-6" id="product-thumbnails">
+                        ${thumbnailsHtml}
+                    </div>
+
+                    <!-- Product Name and Category -->
+                    <div class="bg-white p-4 rounded-lg shadow-lg mb-4">
+                        <div class="flex flex-wrap items-center gap-3 mb-3">
+                            <h2 class="text-2xl font-bold text-gray-800">${product.name}</h2>
+                            <span class="text-sm bg-blue-100 text-blue-800 px-2 py-1 rounded-full">${categoriesData.find(cat => cat.id === product.category)?.name || 'غير مصنف'}</span>
+                        </div>
+
+                        <!-- Status Info -->
+                        <div class="mb-3">
+                            ${statusInfo}
+                        </div>
+
+                        <!-- Price -->
+                        <p class="text-3xl font-bold text-green-600">${Math.round(product.price).toLocaleString('en-US')} د.ع</p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    ${buttonsSection}
+
+                    <!-- Product Description -->
+                    <div class="bg-white p-6 rounded-lg shadow-lg mb-6">
+                        <h3 class="text-xl font-semibold text-gray-800 mb-4">وصف المنتج</h3>
+                        <div class="text-gray-700 leading-relaxed whitespace-pre-line">${product.description}</div>
+                    </div>
+
+                    <!-- Related Products -->
+                    ${relatedProductsHtml}
+                </div>
+            </div>
+        </div>
+    `;
+
+    // إضافة الصفحة الجديدة إلى الجسم
+    document.body.insertAdjacentHTML('beforeend', productPageHtml);
+
+    // إضافة أحداث الأزرار
+    const backToHome = () => {
+        // إزالة المنتج الحالي من التاريخ
+        productHistory.pop();
+
+        const productPage = document.getElementById('product-detail-page');
+        if (productPage) productPage.remove();
+
+        // إذا كان هناك منتج سابق، عرضه
+        if (productHistory.length > 0) {
+            const previousProduct = productHistory[productHistory.length - 1];
+            productHistory.pop(); // إزالته ليتم إضافته مرة أخرى
+            openProductDetailPage(previousProduct);
+        } else {
+            // العودة للصفحة الرئيسية
+            if (mainContent) mainContent.style.display = 'block';
+            if (bottomNav) bottomNav.style.display = 'block';
+        }
+    };
+
+    const backButton = document.getElementById('back-to-previous');
+    if (backButton) {
+        backButton.addEventListener('click', backToHome);
+    }
+
+    const addToCartBtn = document.getElementById('product-page-add-to-cart');
+    if (addToCartBtn) {
+        addToCartBtn.addEventListener('click', async () => {
+            if (userId && currentUserProfile) {
+                await addToCart(product);
+            } else {
+                alertUserMessage("الرجاء تسجيل الدخول أولاً لإضافة منتجات إلى السلة.");
+            }
         });
-    });
-
-    uiElements.addToCartDetailBtn.dataset.productId = product.id;
-    uiElements.addToCartDetailBtn.dataset.productName = product.name;
-    uiElements.addToCartDetailBtn.dataset.productPrice = product.price;
-    uiElements.addToCartDetailBtn.dataset.productImage = productImages[0];
-
-    if (uiElements.buyNowDetailBtn) {
-        uiElements.buyNowDetailBtn.dataset.productId = product.id;
-        uiElements.buyNowDetailBtn.dataset.productName = product.name;
-        uiElements.buyNowDetailBtn.dataset.productPrice = product.price;
-        uiElements.buyNowDetailBtn.dataset.productImage = productImages[0];
     }
 
-    // تطبيق/إزالة كلاس حذف الخلفية البيضاء على المودال
-    if (product.removeWhiteBackground) {
-        uiElements.productDetailModal.classList.add('product-detail-remove-white-bg');
-    } else {
-        uiElements.productDetailModal.classList.remove('product-detail-remove-white-bg');
+    const buyNowBtn = document.getElementById('product-page-buy-now');
+    if (buyNowBtn) {
+        buyNowBtn.addEventListener('click', async () => {
+            if (!userId || !currentUserProfile) {
+                alertUserMessage("الرجاء تسجيل الدخول أولاً لإتمام عملية الشراء.", 'warning');
+                return;
+            }
+
+            const mainImageUrl = productImages[0];
+            const tempCart = [{
+                id: product.id,
+                productId: product.id,
+                name: product.name,
+                price: product.price,
+                imageUrl: mainImageUrl,
+                quantity: 1
+            }];
+
+            orderCartData = [...tempCart];
+            populateCheckoutModalDirectPurchase(product);
+
+            // العودة للصفحة الرئيسية وفتح نافذة الدفع
+            const productPage = document.getElementById('product-detail-page');
+            if (productPage) productPage.remove();
+            if (mainContent) mainContent.style.display = 'block';
+            if (bottomNav) bottomNav.style.display = 'block';
+
+            if (uiElements.checkoutModal) uiElements.checkoutModal.classList.remove('hidden');
+        });
     }
 
-    uiElements.productDetailModal.classList.remove('hidden');
+    // إنشاء دالة تغيير الصورة الرئيسية
+    window.changeMainImage = (imageUrl, index) => {
+        const mainImage = document.getElementById('main-product-image');
+        const currentIndex = document.getElementById('current-img-index');
+        const thumbnails = document.querySelectorAll('#product-thumbnails > div');
 
-    // إعادة تعيين scroll إلى الأعلى
-    const modalContent = uiElements.productDetailModal.querySelector('.overflow-y-auto');
-    if (modalContent) {
-        modalContent.scrollTop = 0;
-    }
+        if (mainImage) {
+            mainImage.src = imageUrl;
+        }
+        if (currentIndex) {
+            currentIndex.textContent = index + 1;
+        }
+
+        // تحديث الحد المميز للصورة المختارة
+        thumbnails.forEach((thumb, i) => {
+            if (i === index) {
+                thumb.classList.remove('border-gray-300');
+                thumb.classList.add('border-blue-500');
+            } else {
+                thumb.classList.remove('border-blue-500');
+                thumb.classList.add('border-gray-300');
+            }
+        });
+    };
+
+    // دالة فتح منتج ذو صلة
+    window.openRelatedProduct = (productId) => {
+        const relatedProduct = productsData.find(p => p.id === productId);
+        if (relatedProduct) {
+            // إزالة الصفحة الحالية
+            const currentPage = document.getElementById('product-detail-page');
+            if (currentPage) currentPage.remove();
+
+            // فتح المنتج الجديد
+            openProductDetailPage(relatedProduct);
+        }
+    };
 };
 
 // Category dropdowns
@@ -847,21 +1235,21 @@ const populateCategoryDropdowns = () => {
         // إضافة حدث النقر للعنصر الكامل أو النص بداخله
         const clickHandler = (e) => {
             e.stopPropagation();
-            
+
             // البحث عن categoryId في العنصر نفسه أو في العنصر الفرعي
             let categoryId = e.target.dataset.categoryId;
             if (!categoryId && e.target.closest('.category-filter-btn')) {
                 categoryId = e.target.closest('.category-filter-btn').dataset.categoryId;
             }
-            
+
             if (categoryId) {
                 filterProductsByCategory(categoryId);
                 uiElements.categoriesDropdown.classList.add('hidden');
             }
         };
-        
+
         filterBtn.addEventListener('click', clickHandler);
-        
+
         // إضافة نفس المعالج للنص بداخل العنصر
         const spanElement = filterBtn.querySelector('span');
         if (spanElement) {
@@ -895,13 +1283,13 @@ const filterProductsByCategory = (categoryId) => {
     const filtered = productsData.filter(product => {
         return categoryId === 'all' || product.category === categoryId;
     });
-    
+
     // التحقق من اسم التصنيف وإضافة كلاس خاص للماوس بادات
     const bodyElement = document.body;
-    
+
     // إزالة جميع كلاسات التصنيفات السابقة
     bodyElement.classList.remove('mousepads-category');
-    
+
     // إضافة كلاس الماوس بادات فقط إذا كان التصنيف محدد وليس "الكل"
     if (categoryId !== 'all') {
         const category = categoriesData.find(cat => cat.id === categoryId);
@@ -909,7 +1297,7 @@ const filterProductsByCategory = (categoryId) => {
             bodyElement.classList.add('mousepads-category');
         }
     }
-    
+
     displayProducts(filtered);
 };
 
@@ -2159,6 +2547,24 @@ const setupEventListeners = () => {
         });
     }
 
+    // Featured products management
+    const manageFeaturedBtn = document.getElementById('manage-featured-btn');
+    if (manageFeaturedBtn) {
+        manageFeaturedBtn.addEventListener('click', openManageFeaturedModal);
+    }
+
+    const saveFeaturedBtn = document.getElementById('save-featured-btn');
+    if (saveFeaturedBtn) {
+        saveFeaturedBtn.addEventListener('click', saveFeaturedProducts);
+    }
+
+    const featuredSearchInput = document.getElementById('featured-search-input');
+    if (featuredSearchInput) {
+        featuredSearchInput.addEventListener('input', (e) => {
+            displayAvailableProducts(e.target.value);
+        });
+    }
+
     // Admin edit category form
     if (uiElements.editCategoryForm) {
         uiElements.editCategoryForm.addEventListener('submit', async (e) => {
@@ -2366,11 +2772,11 @@ const setupEventListeners = () => {
     if (uiElements.bottomHomeBtn) {
         uiElements.bottomHomeBtn.addEventListener('click', () => {
             document.getElementById('top').scrollIntoView({ behavior: 'smooth' });
-            
+
             // إزالة كلاس الماوس بادات عند العودة للصفحة الرئيسية
             const bodyElement = document.body;
             bodyElement.classList.remove('mousepads-category');
-            
+
             displayProducts(productsData); // Show all products
         });
     }
