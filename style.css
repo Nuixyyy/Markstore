@@ -422,16 +422,16 @@ button {
     padding: 0.75rem 1rem;
     gap: 0.5rem;
   }
-  
+
   #product-detail-page #back-to-previous svg {
     width: 1.25rem;
     height: 1.25rem;
   }
-  
+
   #product-detail-page h1 {
     font-size: 1rem;
   }
-  
+
   #product-detail-page .pt-24 {
     padding-top: 5rem;
   }
@@ -442,7 +442,7 @@ button {
   #product-detail-page #main-product-image {
     height: 250px;
   }
-  
+
   #product-detail-page .grid {
     grid-template-columns: 1fr;
     gap: 1.5rem;
@@ -501,7 +501,7 @@ button {
 
 .product-card-hover img {
   object-fit: contain;
-  background-color: white;
+  background-color: rgb(255, 255, 255);
   image_rendering: -webkit-optimize-contrast;
   image_rendering: crisp-edges;
   image_rendering: pixelated;
@@ -910,6 +910,163 @@ section:not(.hero-banner) h3 {
 /* تحديث أنماط النماذج للخلفية البيضاء */
 .modal-overlay {
     background-color: rgba(0, 0, 0, 0.5) !important;
+}
+
+/* تغيير ألوان جميع القوائم المنبثقة إلى الأبيض */
+.modal-overlay > div,
+.modal-overlay .bg-purple-800,
+.modal-overlay .bg-purple-700,
+.modal-overlay .bg-purple-600 {
+    background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%) !important;
+    color: #333333 !important;
+    border: 2px solid #e5e7eb !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2) !important;
+}
+
+/* تحديث ألوان النصوص في المودالز */
+.modal-overlay h2,
+.modal-overlay h3,
+.modal-overlay h4,
+.modal-overlay h5,
+.modal-overlay p,
+.modal-overlay span,
+.modal-overlay label,
+.modal-overlay div:not(.bg-green-500):not(.bg-red-500):not(.bg-blue-500) {
+    color: #1f2937 !important;
+}
+
+/* تحديث ألوان الأزرار في المودالز */
+.modal-overlay button {
+    transition: all 0.3s ease !important;
+}
+
+.modal-overlay button:not(.bg-green-500):not(.bg-red-500):not(.bg-blue-500):not(.bg-purple-600):not(.bg-gray-500) {
+    background: linear-gradient(135deg, #3b82f6, #8b5cf6) !important;
+    color: white !important;
+    border: 2px solid transparent !important;
+}
+
+.modal-overlay button:not(.bg-green-500):not(.bg-red-500):not(.bg-blue-500):not(.bg-purple-600):not(.bg-gray-500):hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.3) !important;
+}
+
+/* تحديث ألوان الحقول في المودالز */
+.modal-overlay input,
+.modal-overlay textarea,
+.modal-overlay select {
+    background-color: #f9fafb !important;
+    border: 2px solid #d1d5db !important;
+    color: #1f2937 !important;
+}
+
+.modal-overlay input:focus,
+.modal-overlay textarea:focus,
+.modal-overlay select:focus {
+    border-color: #3b82f6 !important;
+    background-color: #ffffff !important;
+    outline: none !important;
+}
+
+/* تحديث ألوان الأزرار الخاصة */
+.modal-overlay .bg-green-500 {
+    background: linear-gradient(135deg, #10b981, #059669) !important;
+    color: white !important;
+}
+
+.modal-overlay .bg-red-500 {
+    background: linear-gradient(135deg, #ef4444, #dc2626) !important;
+    color: white !important;
+}
+
+.modal-overlay .bg-blue-500 {
+    background: linear-gradient(135deg, #3b82f6, #2563eb) !important;
+    color: white !important;
+}
+
+.modal-overlay .bg-gray-500 {
+    background: linear-gradient(135deg, #6b7280, #4b5563) !important;
+    color: white !important;
+}
+
+/* تحديث خلفية عناصر القائمة */
+.modal-overlay .space-y-2 > div,
+.modal-overlay .space-y-3 > div,
+.modal-overlay .space-y-4 > div {
+    background: transparent !important;
+}
+
+/* تحديث ألوان النجوم في التقييمات */
+.modal-overlay .text-yellow-400 {
+    color: #fbbf24 !important;
+}
+
+.modal-overlay .text-gray-400 {
+    color: #9ca3af !important;
+}
+
+/* تحديث ألوان رموز النجوم */
+.modal-overlay .star-rating svg {
+    transition: all 0.2s ease !important;
+}
+
+/* تحديث ألوان الحدود في المودالز */
+.modal-overlay .border-purple-600,
+.modal-overlay .border-purple-700,
+.modal-overlay .border-t,
+.modal-overlay .border-b {
+    border-color: #e5e7eb !important;
+}
+
+/* تحديث لون الخطوط الفاصلة */
+.modal-overlay .border-t {
+    border-top-color: #f3f4f6 !important;
+}
+
+/* تحديث ألوان الأزرار في سلة التسوق */
+.modal-overlay .cart-item button {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+.modal-overlay .cart-item button:hover {
+    background: #e5e7eb !important;
+    color: #1f2937 !important;
+}
+
+/* تحديث ألوان عناصر المنتجات في السلة */
+.modal-overlay .cart-item {
+    background: #f9fafb !important;
+    border: 1px solid #f3f4f6 !important;
+    border-radius: 0.5rem !important;
+}
+
+/* تحديث لون النصوص في عناصر السلة */
+.modal-overlay .cart-item * {
+    color: #1f2937 !important;
+}
+
+/* تحديثات خاصة لمودال البروفايل */
+.modal-overlay #profile-modal img {
+    border: 3px solid #e5e7eb !important;
+}
+
+/* تحديث لون النصوص المساعدة */
+.modal-overlay .text-sm {
+    color: #6b7280 !important;
+}
+
+/* إغلاق المودال - تحديث لون الأيقونة */
+.modal-overlay .absolute.top-4.right-4 button {
+    background: #f3f4f6 !important;
+    color: #374151 !important;
+    border: 1px solid #d1d5db !important;
+}
+
+.modal-overlay .absolute.top-4.right-4 button:hover {
+    background: #e5e7eb !important;
+    color: #1f2937 !important;
 }
 
 /* تحديث لون قسم التواصل للأبيض */
